@@ -6,6 +6,6 @@ function Game(home, away)
     this.away = away;
     this.events = [];
 }
-module.exports.Game = Game;
+module.exports = Game;
 
 

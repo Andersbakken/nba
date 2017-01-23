@@ -18,4 +18,4 @@ function Time(minute, second)
 Time.quarterLength = 12 * 60 * 1000;
 Time.extraTimeLength = 5 * 60 * 1000;
 
-module.exports.Time = Time;
+module.exports = Time;

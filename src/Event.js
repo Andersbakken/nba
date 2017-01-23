@@ -1,11 +1,11 @@
 /*global module */
 
-function Event(type, time, data, team)
+function Event(type, time, team, data)
 {
     this.type = type;
     this.time = time;
-    this.data = data;
     this.team = team;
+    this.data = data;
 }
 
 // scores
@@ -32,10 +32,11 @@ Event.FF1 = 15;
 Event.FF2 = 16;
 Event.TF = 17;
 // misc
-Event.STARTED = 18;
-Event.SUBBED_IN = 19;
-Event.SUBBED_OUT = 20;
-Event.numEvents = Event.SUBBED_OUT + 1;
+Event.SUBBED_IN = 18;
+Event.SUBBED_OUT = 19;
+Event.TIMEOUT = 20;
+Event.TIMEOUT_20S = 21;
+Event.numEvents = Event.TIMEOUT_20S + 1;
 Event.eventNames = (function() {
     var ret = {};
     Object.keys(Event).forEach(function(key) {
@@ -48,4 +49,4 @@ Event.eventNames = (function() {
     return ret;
 })();
 
-module.exports.Event = Event;
+module.exports = Event;

@@ -1,10 +1,12 @@
 /*global module */
 
-function Team(name, link)
+var nextTeamId = 1;
+function Team(name, abbrev)
 {
     this.name = name;
-    this.link = link;
+    this.abbrev = abbrev;
+    this.id = nextTeamId++;
     this.players = {};
 }
 
-module.exports.Team = Team;
+module.exports = Team;

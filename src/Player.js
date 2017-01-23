@@ -8,4 +8,4 @@ function Player(name)
     this.toString = function() { return `Player(${this.name}, ${this.id})`; };
 }
 
-module.exports.Player = Player;
+module.exports = Player;
