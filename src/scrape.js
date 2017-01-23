@@ -12,11 +12,10 @@ var Game = require('./Game.js');
 
 console.log(Object.keys(Team));
 
-function parse(file, time) {
-    var home = new Team("Golden State Warriors", "GSW");
-    var away = new Team("Cleveland Cavaliers", "CLE");
+function parse(file, home, away, time) {
     var game = new Game(home, away);
     var quarter = undefined;
+    var overtime = 0;
     var lines = fs.readFileSync(file, "utf-8").split("\n");
     var homeLineup = {};
     var awayLineup = {};
@@ -38,7 +37,23 @@ function parse(file, time) {
             awayLineup = {};
             return;
         }
-        var minutes = (quarter - 1) * 12 + (12 - match[1]);
+        var ot = /Start of ([0-9])[a-z][a-z] overtime/.exec(lineData);
+        if (ot) {
+            overtime = ot[1];
+            console.log(`Got overtime ${overtime}`);
+            if (overtime == 1) {
+                console.log(`DUDES AT END OF QUARTER 4: ` + JSON.stringify(homeLineup, null, 4) + " " + JSON.stringify(awayLineup, null, 4));
+            } else {
+                console.log(`DUDES AT END OF OVERTIME ${overtime - 1}: ` + JSON.stringify(homeLineup, null, 4) + " " + JSON.stringify(awayLineup, null, 4));
+            }
+            homeLineup = {};
+            awayLineup = {};
+            return;
+        }
+        if (overtime > 0)
+            var minutes = 48 + (overtime - 1) * 5 + (5 - match[1]);
+        else
+            var minutes = (quarter - 1) * 12 + (12 - match[1]);
         var time = new Time(minutes, match[2]);
         var homeEvent = true;
         if (!/\t+[0-9]+-[0-9]+/.exec(lineData)) {
@@ -195,5 +210,7 @@ function parse(file, time) {
 // console.log(Event.eventNames[Event.TO]);
 
 // console.log(Event.TO);
-parse("../testdata/201701160GSW.txt", new Time(49, 0));
+var home = new Team("Portland Trail Blazers", "POR");
+var away = new Team("Detroit Pistons", "DET");
+parse("../testdata/201701080POR.txt", home, away, new Time(59, 0));
 
