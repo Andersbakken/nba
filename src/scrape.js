@@ -44,9 +44,11 @@ function parse(file, time) {
             homeEvent = false;
         }
 
-        function addPlayer(player) {
-            var team = homeEvent ? home : away;
-            if (player == 'TEAM')
+        function addPlayer(player, homePlayer) {
+            if (homePlayer == undefined)
+                homePlayer = homeEvent;
+            var team = homePlayer ? home : away;
+            if (player == 'TEAM' || player == 'Team')
                 return team;
             if (!team.players[player]) {
                 var ret = new Player(player);
@@ -55,6 +57,7 @@ function parse(file, time) {
             }
             return team.players[player];
         }
+        // console.log(lineData);
         m = /Turnover by (.*) \(([^)]*)\)/.exec(lineData);
         if (m) {
             // console.log(`GOT A TURNOVER ${m[1]} ${m[2]}`);
@@ -62,7 +65,7 @@ function parse(file, time) {
             game.events.push(new Event(Event.TO, time, homeEvent ? home : away, player));
             var m2 = /steal by (.*)/.exec(m[2]);
             if (m2) {
-                game.events.push(new Event(Event.STL, time, homeEvent ? away : home, addPlayer(m2[1])));
+                game.events.push(new Event(Event.STL, time, homeEvent ? away : home, addPlayer(m2[1], !homeEvent)));
             }
             return;
         }
@@ -97,7 +100,7 @@ function parse(file, time) {
 
         m = / foul by (.*) \(drawn by [^)]*\)/.exec(lineData);
         if (m) {
-            game.events.push(new Event(Event.PF, time, homeEvent ? home : away, addPlayer(m[1])));
+            game.events.push(new Event(Event.PF, time, homeEvent ? away : home, addPlayer(m[1], !homeEvent)));
             return;
         }
 
@@ -109,7 +112,7 @@ function parse(file, time) {
 
         m = /[Ff]lagrant foul type ([12]) by (.*)/.exec(lineData);
         if (m) {
-            game.events.push(new Event(m[1] == '1' ? Event.FF1 : Event.FF2, time, homeEvent ? home : away, addPlayer(m[1])));
+            game.events.push(new Event(m[1] == '1' ? Event.FF1 : Event.FF2, time, homeEvent ? home : away, addPlayer(m[2])));
             return;
         }
 
@@ -129,7 +132,7 @@ function parse(file, time) {
 
         m = /(.*) misses ([23])-pt shot .* \(block by (.*)\)/.exec(lineData);
         if (m) {
-            game.events.push(new Event(Event.BLK, time, homeEvent ? away : home, addPlayer(m[3])));
+            game.events.push(new Event(Event.BLK, time, homeEvent ? away : home, addPlayer(m[3], !homeEvent)));
             game.events.push(new Event(m[2] == '2' ? Event.FGA2 : Event.FGA3, time, homeEvent ? home : away, addPlayer(m[1])));
             return;
         }
@@ -163,13 +166,13 @@ function parse(file, time) {
         var event = game.events[i];
         if (event.time.value > time.value)
             break;
-        console.log(`${event.time.minute}:${event.time.second} ${event.team.abbrev} ${Event.eventNames[event.type]} ${event.data}`);
+        // console.log(`${event.time.minute}:${event.time.second} ${event.team.abbrev} ${Event.eventNames[event.type]} ${event.data}`);
     }
-    console.log(`${game.away.abbrev} ${box.awayScore} - ${box.homeScore} ${game.home.abbrev}`);
+    // console.log(`${game.away.abbrev} ${box.awayScore} - ${box.homeScore} ${game.home.abbrev}`);
 }
 
 // console.log(Event.eventNames[Event.TO]);
 
 // console.log(Event.TO);
-parse("../testdata/201701160GSW.txt", new Time(3, 0));
+parse("../testdata/201701160GSW.txt", new Time(49, 0));
 
