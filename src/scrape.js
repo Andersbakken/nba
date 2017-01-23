@@ -18,6 +18,10 @@ function parse(file, time) {
     var game = new Game(home, away);
     var quarter = undefined;
     var lines = fs.readFileSync(file, "utf-8").split("\n");
+    var homeLineup = {};
+    var awayLineup = {};
+    var lineUpIdx = 0;
+    var lastLineData = "";
     lines.forEach(function(line) {
         var match = /^([0-9][0-9]?):([0-9][0-9])\.0.(.*)/.exec(line);
         if (!match)
@@ -27,6 +31,11 @@ function parse(file, time) {
         if (m) {
             quarter = m[1];
             console.log(`Got quarter ${quarter}`);
+            if (quarter > 1) {
+                console.log(`DUDES AT END OF QUARTER ${quarter - 1}: ` + JSON.stringify(homeLineup, null, 4) + " " + JSON.stringify(awayLineup, null, 4));
+            }
+            homeLineup = {};
+            awayLineup = {};
             return;
         }
         var minutes = (quarter - 1) * 12 + (12 - match[1]);
@@ -45,11 +54,17 @@ function parse(file, time) {
         }
 
         function addPlayer(player, homePlayer) {
-            if (homePlayer == undefined)
+            if (homePlayer == undefined) {
                 homePlayer = homeEvent;
+            } else {
+                // console.log("YO YO YO", player, homePlayer);
+            }
             var team = homePlayer ? home : away;
             if (player == 'TEAM' || player == 'Team')
                 return team;
+            var lineup = homePlayer ? homeLineup : awayLineup;
+            // console.log(`ADDING ${player} ${homePlayer} ${JSON.stringify(lineup)} ${lineup === homeLineup}`);
+            lineup[player] = ++lineUpIdx;
             if (!team.players[player]) {
                 var ret = new Player(player);
                 team.players[player] = ret;
@@ -57,7 +72,12 @@ function parse(file, time) {
             }
             return team.players[player];
         }
-        // console.log(lineData);
+        // if (Object.keys(homeEvent ? homeLineup : awayLineup).length > 5) {
+        //     console.log("TOOOOOOOOOOO MANY");
+        // }
+        // console.log(Object.keys(homeEvent ? homeLineup : awayLineup).length,
+        //             JSON.stringify(Object.keys(homeEvent ? homeLineup : awayLineup)), lastLineData);
+        lastLineData = lineData;
         m = /Turnover by (.*) \(([^)]*)\)/.exec(lineData);
         if (m) {
             // console.log(`GOT A TURNOVER ${m[1]} ${m[2]}`);
@@ -118,8 +138,10 @@ function parse(file, time) {
 
         m = /(.*) enters the game for (.*)/.exec(lineData);
         if (m) {
+            var lineup = homeEvent ? homeLineup : awayLineup;
             game.events.push(new Event(Event.SUBBED_OUT, time, homeEvent ? home : away, addPlayer(m[2])));
             game.events.push(new Event(Event.SUBBED_IN, time, homeEvent ? home : away, addPlayer(m[1])));
+            delete lineup[m[2]];
             return;
         }
 
@@ -156,8 +178,7 @@ function parse(file, time) {
             return;
         }
 
-
-        console.log(`Unhandled event ${time.minute} ${time.second} ${lineData}`);
+        // console.log(`Unhandled event ${time.minute} ${time.second} ${lineData}`);
     });
     // console.log("game events: " + game.events.length);
     // console.log(lines.length);
