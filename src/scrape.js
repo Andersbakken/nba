@@ -12,14 +12,12 @@ var Game = require('./Game.js');
 
 console.log(Object.keys(Team));
 
-function parse(file, home, away, time) {
+function parse(file, home, away, maxTime) {
     var game = new Game(home, away);
     var quarter = undefined;
-    var overtime = 0;
     var lines = fs.readFileSync(file, "utf-8").split("\n");
-    var homeLineup = {};
-    var awayLineup = {};
-    var lineUpIdx = 0;
+    var homePlayers = {};
+    var awayPlayers = {};
     var lastLineData = "";
     lines.forEach(function(line) {
         var match = /^([0-9][0-9]?):([0-9][0-9])\.0.(.*)/.exec(line);
@@ -28,33 +26,26 @@ function parse(file, home, away, time) {
         var lineData = match[3];
         var m = /Start of ([0-9])[a-z][a-z] quarter/.exec(lineData);
         if (m) {
-            quarter = m[1];
-            console.log(`Got quarter ${quarter}`);
-            if (quarter > 1) {
-                console.log(`DUDES AT END OF QUARTER ${quarter - 1}: ` + JSON.stringify(homeLineup, null, 4) + " " + JSON.stringify(awayLineup, null, 4));
-            }
-            homeLineup = {};
-            awayLineup = {};
+            quarter = parseInt(m[1]) - 1;
+            // console.log(`Got quarter ${quarter}`);
+            game.events.push(new Event(Event.QUARTER_START, Time.quarterStart(quarter), undefined, quarter));
+            return;
+        }
+        m = /End of [0-9]/.exec(lineData);
+        if (m) {
+            game.events.push(new Event(Event.QUARTER_END, Time.quarterEnd(quarter), undefined, quarter));
             return;
         }
         var ot = /Start of ([0-9])[a-z][a-z] overtime/.exec(lineData);
         if (ot) {
-            overtime = ot[1];
-            console.log(`Got overtime ${overtime}`);
-            if (overtime == 1) {
-                console.log(`DUDES AT END OF QUARTER 4: ` + JSON.stringify(homeLineup, null, 4) + " " + JSON.stringify(awayLineup, null, 4));
-            } else {
-                console.log(`DUDES AT END OF OVERTIME ${overtime - 1}: ` + JSON.stringify(homeLineup, null, 4) + " " + JSON.stringify(awayLineup, null, 4));
-            }
-            homeLineup = {};
-            awayLineup = {};
+            var overtime = ot[1];
+            quarter = 3 + parseInt(overtime); // 0-indexed
+            game.events.push(new Event(Event.QUARTER_START, Time.quarterStart(quarter), undefined, quarter));
             return;
         }
-        if (overtime > 0)
-            var minutes = 48 + (overtime - 1) * 5 + (5 - match[1]);
-        else
-            var minutes = (quarter - 1) * 12 + (12 - match[1]);
-        var time = new Time(minutes, match[2]);
+        var time = Time.quarterEnd(quarter);
+        time.ms -= parseInt(match[1]) * 60 * 1000;
+        time.ms -= parseInt(match[2]) * 1000;
         var homeEvent = true;
         if (!/\t+[0-9]+-[0-9]+/.exec(lineData)) {
             // jump ball, ignore so far
@@ -77,15 +68,21 @@ function parse(file, home, away, time) {
             var team = homePlayer ? home : away;
             if (player == 'TEAM' || player == 'Team')
                 return team;
-            var lineup = homePlayer ? homeLineup : awayLineup;
+            var map = homePlayer ? homePlayers : awayPlayers;
+            // var lineup = homePlayer ? homeLineup : awayLineup;
             // console.log(`ADDING ${player} ${homePlayer} ${JSON.stringify(lineup)} ${lineup === homeLineup}`);
-            lineup[player] = ++lineUpIdx;
-            if (!team.players[player]) {
-                var ret = new Player(player);
-                team.players[player] = ret;
-                return ret;
+            if (!map[player]) {
+                var p = new Player(player);
+                map[player] = p;
+                team.players[p.id] = p;
             }
-            return team.players[player];
+            var ret = map[player];
+            // if (!lineup[player]) {
+            //     var subbedInTime = new Time((quarter - 1) * 12, 0);
+            //     game.events.push(new Event(Event.SUBBED_IN, subbedInTime, homePlayer ? home : away, ret));
+            // }
+            // lineup[player] = ++lineUpIdx;
+            return ret;
         }
         // if (Object.keys(homeEvent ? homeLineup : awayLineup).length > 5) {
         //     console.log("TOOOOOOOOOOO MANY");
@@ -153,10 +150,10 @@ function parse(file, home, away, time) {
 
         m = /(.*) enters the game for (.*)/.exec(lineData);
         if (m) {
-            var lineup = homeEvent ? homeLineup : awayLineup;
+            // var lineup = homeEvent ? homeLineup : awayLineup;
             game.events.push(new Event(Event.SUBBED_OUT, time, homeEvent ? home : away, addPlayer(m[2])));
             game.events.push(new Event(Event.SUBBED_IN, time, homeEvent ? home : away, addPlayer(m[1])));
-            delete lineup[m[2]];
+            // delete lineup[m[2]];
             return;
         }
 
@@ -197,20 +194,37 @@ function parse(file, home, away, time) {
     });
     // console.log("game events: " + game.events.length);
     // console.log(lines.length);
-    var box = new BoxScore(game, time);
-    for (var i=0; i<game.events.length; ++i) {
-        var event = game.events[i];
-        if (event.time.value > time.value)
-            break;
-        // console.log(`${event.time.minute}:${event.time.second} ${event.team.abbrev} ${Event.eventNames[event.type]} ${event.data}`);
-    }
+    var box = new BoxScore(game, maxTime);
+    // for (var i=0; i<game.events.length; ++i) {
+    //     var event = game.events[i];
+    //     if (event.time.value > time.value)
+    //         break;
+    //     if (event.team) {
+    //         console.log(`${event.time.minute}:${event.time.second} ${event.team.abbrev} ${Event.eventNames[event.type]} ${event.data}`);
+    //     } else {
+    //         console.log(`${event.time.minute}:${event.time.second} ${Event.eventNames[event.type]} ${event.data}`);
+    //     }
+    // }
     // console.log(`${game.away.abbrev} ${box.awayScore} - ${box.homeScore} ${game.home.abbrev}`);
 }
 
 // console.log(Event.eventNames[Event.TO]);
 
 // console.log(Event.TO);
-var home = new Team("Portland Trail Blazers", "POR");
-var away = new Team("Detroit Pistons", "DET");
-parse("../testdata/201701080POR.txt", home, away, new Time(59, 0));
+var home = new Team("Golden State Warriors", "GSW");
+var away = new Team("Cleveland Cavaliers", "CLE");
+parse("../testdata/201701160GSW.txt", home, away);
 
+// var home = new Team("Portland Trail Blazers", "POR");
+// var away = new Team("Detroit Pistons", "DET");
+// parse("../testdata/201701080POR.txt", home, away);
+
+// var t = new Time(1000);
+// console.log(t.toString());
+
+// var names = ["First", "Second", "Third", "Fourth", "1st OT", "2nd OT"];
+// for (var i=0; i<6; ++i) {
+//     var s = Time.quarterStart(i);
+//     var e = Time.quarterEnd(i);
+//     console.log(`${names[i]} ${i} start ${s} --- end ${e}`);
+// }

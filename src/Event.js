@@ -34,9 +34,13 @@ Event.TF = 17;
 // misc
 Event.SUBBED_IN = 18;
 Event.SUBBED_OUT = 19;
-Event.TIMEOUT = 20;
-Event.TIMEOUT_20S = 21;
-Event.numEvents = Event.TIMEOUT_20S + 1;
+Event.MINUTES = 20;
+// team
+Event.TIMEOUT = 21;
+Event.TIMEOUT_20S = 22;
+Event.QUARTER_START = 23;
+Event.QUARTER_END = 24;
+Event.numEvents = Event.QUARTER_END + 1;
 Event.eventNames = (function() {
     var ret = {};
     Object.keys(Event).forEach(function(key) {
