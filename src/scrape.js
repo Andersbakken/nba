@@ -9,6 +9,7 @@ var PlayerScore = require('./PlayerScore.js');
 var BoxScore = require('./BoxScore.js');
 var Event = require('./Event.js');
 var Game = require('./Game.js');
+var zlib = require('zlib');
 
 function parse(file, home, away, maxTime) {
     var game = new Game(home, away);
