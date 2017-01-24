@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 
 /*global require */
-var fs = require('fs');
-var Player = require('./Player.js');
-var Team = require('./Team.js');
-var Time = require('./Time.js');
-var PlayerScore = require('./PlayerScore.js');
-var BoxScore = require('./BoxScore.js');
-var Event = require('./Event.js');
-var Game = require('./Game.js');
-var zlib = require('zlib');
+const fs = require('fs');
+const Player = require('./Player.js');
+const Team = require('./Team.js');
+const Time = require('./Time.js');
+const PlayerScore = require('./PlayerScore.js');
+const BoxScore = require('./BoxScore.js');
+const Event = require('./Event.js');
+const Game = require('./Game.js');
+const League = require('./League.js');
+const zlib = require('zlib');
 
 function parse(file, home, away, maxTime) {
     var game = new Game(home, away);
@@ -236,7 +237,6 @@ function parse(file, home, away, maxTime) {
 }
 
 // console.log(Event.eventNames[Event.TO]);
-
 
 // console.log(Event.TO);
 var home = new Team("Golden State Warriors", "GSW");
