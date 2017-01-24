@@ -35,11 +35,12 @@ Event.TF = 17;
 Event.SUBBED_IN = 18;
 Event.SUBBED_OUT = 19;
 Event.MINUTES = 20;
+Event.STARTED = 21;
 // team
-Event.TIMEOUT = 21;
-Event.TIMEOUT_20S = 22;
-Event.QUARTER_START = 23;
-Event.QUARTER_END = 24;
+Event.TIMEOUT = 22;
+Event.TIMEOUT_20S = 23;
+Event.QUARTER_START = 24;
+Event.QUARTER_END = 25;
 Event.numEvents = Event.QUARTER_END + 1;
 Event.eventNames = (function() {
     var ret = {};

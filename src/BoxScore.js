@@ -68,30 +68,14 @@ function BoxScore(game, maxTime)
         case Event.FTM: pts = 1; break;
         case Event.SUBBED_IN:
             lineup[ev.data.id] = true;
-            // if (ev.data.id == 12) {
-            //     console.log("IGGY SUBBED IN", ev.time);
-            // }
-            // if (ev.data.id == 4) {
-            //     console.log("KLAY SUBBED IN", ev.time);
-            // }
             subs.push({type: Event.SUBBED_IN, time: ev.time, player: ev.data.id, name: ev.data.name, foo: "in1" });
             break;
         case Event.SUBBED_OUT:
-            // if (ev.data.id == 12) {
-            //     console.log("IGGY SUBBED OUT", ev.time);
-            // }
-            // if (ev.data.id == 4) {
-            //     console.log("KLAY SUBBED OUT", ev.time);
-            // }
-
-
-            // console.log("FUCKING SUBBED OUT", JSON.stringify(ev));
             if (!lineup[ev.data.id]) {
-                subs.push({ type: Event.SUBBED_IN, time: new Time((quarter - 1) * 12, 0), player: ev.data.id, name: ev.data.name, foo: "in4" });
+                subs.push({ type: Event.SUBBED_IN, time: Time.quarterStart(quarter), player: ev.data.id, name: ev.data.name, foo: "in4" });
             } else {
                 delete lineup[ev.data.id];
             }
-            // console.log("SUBBOUT", JSON.stringify(ev), JSON.stringify(Object.keys(lineup)));
             subs.push({ type: Event.SUBBED_OUT, time: ev.time, player: ev.data.id, name: ev.data.name, foo: "out1" });
             break;
         }
@@ -101,41 +85,30 @@ function BoxScore(game, maxTime)
         if (ev.data instanceof Player) {
             if (!lineup[ev.data.id] && ev.type != Event.SUBBED_OUT && ev.type != Event.SUBBED_IN) {
                 lineup[ev.data.id] = true;
+                if (quarter == 0)
+                    this.players[ev.data.id][Event.STARTED] = true;
                 subs.push({ type: Event.SUBBED_IN, time: Time.quarterStart(quarter), player: ev.data.id, name: ev.data.name, foo: "in3" });
             }
             ++this.players[ev.data.id][ev.type];
             this.players[ev.data.id][Event.PTS] += pts;
-            // if (!lineup[ev.data.id]) {
-            //     lineup =
-            // }
         }
     }
     var that = this;
     function processSubs(subs) {
         var map = {};
         var ms = {};
-        // subs.forEach(function(sub) {
-        //     console.log(sub.time.value);
-        // });
 
         var sorted = subs.sort(function(l, r) { return l.time.compare(r.time); });
-        // sorted.forEach(function(sub) {
-        //     console.log(sub.time.value);
-        // });
-
         sorted.forEach(function(sub) {
-            // console.log(JSON.stringify(sub));
-            // return;
             if (sub.type == Event.SUBBED_IN) {
-                console.log(`processing sub in time: ${sub.time} player: ${sub.name} playerId: ${sub.player} ${sub.foo}`);
-                // console.log("processing sub in", sub);
+                // console.log(`processing sub in time: ${sub.time} player: ${sub.name} playerId: ${sub.player} ${sub.foo}`);
                 map[sub.player] = sub.time;
             } else {
-                console.log(`processing sub out time: ${sub.time} player: ${sub.name} playerId: ${sub.player} ${sub.foo}`);
-                if (!map[sub.player]) {
-                    console.error(`Somehow ${sub.name} isn't on the court`);
-                    return;
-                }
+                // console.log(`processing sub out time: ${sub.time} player: ${sub.name} playerId: ${sub.player} ${sub.foo}`);
+                // if (!map[sub.player]) {
+                //     console.error(`Somehow ${sub.name} isn't on the court`);
+                //     return;
+                // }
                 var duration = sub.time.value - map[sub.player].value;
                 delete map[sub.player];
                 if (!ms[sub.player]) {
@@ -146,7 +119,7 @@ function BoxScore(game, maxTime)
             }
         });
         for (var id in ms) {
-            that.players[id][Event.MINUTES] = parseInt(ms[id] / 60000);
+            that.players[id][Event.MINUTES] = (new Time(ms[id])).mmss();
         }
     }
     processSubs(homeSubs);
@@ -181,7 +154,13 @@ function BoxScore(game, maxTime)
         console.log("Player             MIN   FGM   FGA   FG%   3PM   3PA   3P%   FTM   FTA   FT%   ORB   DRB   TRB   AST   STL   BLK   TOV    PF   PTS");
         console.log("----------------------------------------------------------------------------------------------------------------------------------");
 
-        var sorted = players.sort(function(l, r) { return that.players[r.id][Event.PTS] - that.players[l.id][Event.PTS]; });
+        var sorted = players.sort(function(l, r) {
+            var ll = that.players[l.id];
+            var rr = that.players[r.id];
+            if (ll[Event.STARTED] != rr[Event.STARTED])
+                return ll[Event.STARTED] ? -1 : 1;
+            return rr[Event.PTS] - ll[Event.PTS];
+        });
         function formatLine(name, stats) {
             var str = pad(name, 16);
             str += pad(stats[Event.MINUTES], 6);

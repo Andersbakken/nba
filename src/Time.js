@@ -2,16 +2,17 @@
 
 function Time(ms)
 {
-    this.ms = ms;
+    this.time = new Date(ms);
     this.end = false;
 }
 Time.prototype = {
-    get value() { return this.ms; },
-    get minutes() { return parseInt(this.ms / (60 * 1000)); },
-    get seconds() { return Math.round(this.ms % (60 * 1000) / 1000); },
+    get milliseconds() { return this.time.getMilliseconds(); },
+    get value() { return this.time.valueOf(); },
+    get minutes() { return this.time.getMinutes(); },
+    get seconds() { return this.time.getSeconds(); },
     get quarter() {
         var ret;
-        var value = this.ms;
+        var value = this.value;
         // ### what happens if something occurs before the ball is inbounded?
         if (value >= Time.quarterLength * 4) {
             value -= Time.quarterLength * 4;
@@ -23,17 +24,20 @@ Time.prototype = {
             --ret;
         return ret;
     },
+    add: function(ms) {
+        this.time = new Date(this.value + ms);
+        this.end = false;
+    },
     compare: function(other) {
-        var ret = this.ms - other.ms;
+        var ret = this.value - other.value;
         if (!ret && this.end != other.end) {
             ret = this.end ? -1 : 1;
         }
         return ret;
     },
-    toString: function() {
-        var str = "ms: ";
-        str += this.ms;
-        str += " ";
+
+    mmss: function() {
+        var str = "";
         if (this.minutes < 10)
             str += "0";
         str += this.minutes;
@@ -41,8 +45,10 @@ Time.prototype = {
         if (this.seconds < 10)
             str += "0";
         str += this.seconds;
-        str += " q: " + this.quarter;
         return str;
+    },
+    toString: function() {
+        return "value: " + this.value + " " + this.mmss() + " q: " + this.quarter;
     }
 };
 Time.quarterLength = 12 * 60 * 1000;

@@ -44,8 +44,8 @@ function parse(file, home, away, maxTime) {
             return;
         }
         var time = Time.quarterEnd(quarter);
-        time.ms -= parseInt(match[1]) * 60 * 1000;
-        time.ms -= parseInt(match[2]) * 1000;
+        time.add(-(parseInt(match[1]) * 60 * 1000));
+        time.add(-(parseInt(match[2]) * 1000));
         var homeEvent = true;
         if (!/\t+[0-9]+-[0-9]+/.exec(lineData)) {
             // jump ball, ignore so far
