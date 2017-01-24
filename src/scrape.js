@@ -237,6 +237,7 @@ function parse(file, home, away, maxTime) {
 
 // console.log(Event.eventNames[Event.TO]);
 
+
 // console.log(Event.TO);
 var home = new Team("Golden State Warriors", "GSW");
 var away = new Team("Cleveland Cavaliers", "CLE");

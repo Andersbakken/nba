@@ -1,4 +1,4 @@
-# Logs
+
 logs
 *.log
 npm-debug.log*
@@ -38,3 +38,5 @@ jspm_packages
 
 # editors
 .vscode/*
+
+nba-gamedata/

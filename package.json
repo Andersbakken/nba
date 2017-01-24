@@ -11,5 +11,8 @@
     "url": "'"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "optimist": "^0.6.1"
+  }
 }
