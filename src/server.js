@@ -11,11 +11,18 @@ const Event = require('./Event.js');
 const Game = require('./Game.js');
 const League = require('./League.js');
 const zlib = require('zlib');
+const argv = require('yargs').usage("Usage: %0 --game [arg] --max-time [time]").argv;
 
 function parse(file, home, away, maxTime) {
     var game = new Game(home, away);
     var quarter = undefined;
-    var html = fs.readFileSync(file, "utf-8");
+    var html;
+    if (/\.gz$/.exec(file)) {
+        var gz = fs.readFileSync(file);
+        html = zlib.inflateSync(gz);
+    } else {
+        html = fs.readFileSync(file, "utf-8");
+    }
     var plain = html.replace(/<[^>]*>/g, '');
     var lines = plain.split('\n');
     // console.log(lines);
@@ -236,12 +243,14 @@ function parse(file, home, away, maxTime) {
     // console.log(`${game.away.abbrev} ${box.awayScore} - ${box.homeScore} ${game.home.abbrev}`);
 }
 
+console.log(argv);
+
 // console.log(Event.eventNames[Event.TO]);
 
-// console.log(Event.TO);
-var home = new Team("Golden State Warriors", "GSW");
-var away = new Team("Cleveland Cavaliers", "CLE");
-parse("../testdata/201701160GSW.html", home, away);
+// // console.log(Event.TO);
+// var home = new Team("Golden State Warriors", "GSW");
+// var away = new Team("Cleveland Cavaliers", "CLE");
+// parse("../testdata/201701160GSW.html", home, away);
 
 // var home = new Team("Portland Trail Blazers", "POR");
 // var away = new Team("Detroit Pistons", "DET");
