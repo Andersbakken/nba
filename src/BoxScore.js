@@ -49,7 +49,7 @@ function BoxScore(game, maxTime)
         } else if (ev.type == Event.QUARTER_END) {
             var playerId;
             for (playerId in homeLineup) {
-                console.log(game.home.players[playerId].name + " is in the game, subbing out for " + ev.data + " " + playerId);
+                // console.log(game.home.players[playerId].name + " is in the game, subbing out for " + ev.data + " " + playerId);
                 homeSubs.push({type: Event.SUBBED_OUT, time: ev.time, player: playerId, name: game.home.players[playerId].name, foo: "out2" });
             }
             for (playerId in awayLineup) {
@@ -118,13 +118,7 @@ function BoxScore(game, maxTime)
         //     console.log(sub.time.value);
         // });
 
-        var sorted = subs.sort(function(l, r) {
-            var ret = l.time.value - r.time.value;
-            if (!ret && l.type != r.type) {
-                return l.type == Event.SUBBED_OUT ? -1 : 1;
-            }
-            return ret;
-        });
+        var sorted = subs.sort(function(l, r) { return l.time.compare(r.time); });
         // sorted.forEach(function(sub) {
         //     console.log(sub.time.value);
         // });
@@ -135,16 +129,20 @@ function BoxScore(game, maxTime)
             if (sub.type == Event.SUBBED_IN) {
                 console.log(`processing sub in time: ${sub.time} player: ${sub.name} playerId: ${sub.player} ${sub.foo}`);
                 // console.log("processing sub in", sub);
-                // map[sub.player] = sub.time;
+                map[sub.player] = sub.time;
             } else {
                 console.log(`processing sub out time: ${sub.time} player: ${sub.name} playerId: ${sub.player} ${sub.foo}`);
-                // var duration = sub.time.value - map[sub.player].value;
-                // delete map[sub.player];
-                // if (!ms[sub.player]) {
-                //     ms[sub.player] = duration;
-                // } else {
-                //     ms[sub.player] += duration;
-                // }
+                if (!map[sub.player]) {
+                    console.error(`Somehow ${sub.name} isn't on the court`);
+                    return;
+                }
+                var duration = sub.time.value - map[sub.player].value;
+                delete map[sub.player];
+                if (!ms[sub.player]) {
+                    ms[sub.player] = duration;
+                } else {
+                    ms[sub.player] += duration;
+                }
             }
         });
         for (var id in ms) {
@@ -179,9 +177,9 @@ function BoxScore(game, maxTime)
     function formatTeam(team, players) {
         var stats = (team == game.home ? that.homeStats : that.awayStats);
         console.log(team.name + " - " + stats[Event.PTS]);
-        console.log("----------------------------------------------------------------------------------------------------------------------------");
+        console.log("----------------------------------------------------------------------------------------------------------------------------------");
         console.log("Player             MIN   FGM   FGA   FG%   3PM   3PA   3P%   FTM   FTA   FT%   ORB   DRB   TRB   AST   STL   BLK   TOV    PF   PTS");
-        console.log("----------------------------------------------------------------------------------------------------------------------------");
+        console.log("----------------------------------------------------------------------------------------------------------------------------------");
 
         var sorted = players.sort(function(l, r) { return that.players[r.id][Event.PTS] - that.players[l.id][Event.PTS]; });
         function formatLine(name, stats) {
