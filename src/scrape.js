@@ -10,54 +10,69 @@ var BoxScore = require('./BoxScore.js');
 var Event = require('./Event.js');
 var Game = require('./Game.js');
 
-console.log(Object.keys(Team));
-
 function parse(file, home, away, maxTime) {
     var game = new Game(home, away);
     var quarter = undefined;
-    var lines = fs.readFileSync(file, "utf-8").split("\n");
+    var html = fs.readFileSync(file, "utf-8");
+    var plain = html.replace(/<[^>]*>/g, '');
+    var lines = plain.split('\n');
+    // console.log(lines);
     var homePlayers = {};
     var awayPlayers = {};
     var lastLineData = "";
-    lines.forEach(function(line) {
-        var match = /^([0-9][0-9]?):([0-9][0-9])\.0.(.*)/.exec(line);
+    for (var i=0; i<lines.length; ++i) {
+        var line = lines[i];
+        var match = /^([0-9][0-9]?):([0-9][0-9])\.0$/.exec(line);
         if (!match)
-            return;
-        var lineData = match[3];
+            continue;
+        var lineData = lines[++i];
+        // console.log(line, match[1], match[2], lineData);
+        // console.log("Got line", match[1], match[2], lineData);
         var m = /Start of ([0-9])[a-z][a-z] quarter/.exec(lineData);
         if (m) {
             quarter = parseInt(m[1]) - 1;
             // console.log(`Got quarter ${quarter}`);
             game.events.push(new Event(Event.QUARTER_START, Time.quarterStart(quarter), undefined, quarter));
-            return;
+            continue;
         }
         m = /End of [0-9]/.exec(lineData);
         if (m) {
             game.events.push(new Event(Event.QUARTER_END, Time.quarterEnd(quarter), undefined, quarter));
-            return;
+            continue;
         }
         var ot = /Start of ([0-9])[a-z][a-z] overtime/.exec(lineData);
         if (ot) {
             var overtime = ot[1];
             quarter = 3 + parseInt(overtime); // 0-indexed
             game.events.push(new Event(Event.QUARTER_START, Time.quarterStart(quarter), undefined, quarter));
-            return;
+            continue;
         }
         var time = Time.quarterEnd(quarter);
         time.add(-(parseInt(match[1]) * 60 * 1000));
         time.add(-(parseInt(match[2]) * 1000));
         var homeEvent = true;
-        if (!/\t+[0-9]+-[0-9]+/.exec(lineData)) {
+        if (lineData.indexOf('&nbsp;') == -1) {
+            // console.log("lost a line", lineData);
             // jump ball, ignore so far
-            return;
+            continue;
         }
 
-        if (lineData.charCodeAt(0) == 32) { // space
-            lineData = lineData.substr(lineData.lastIndexOf('\t') + 1);
+        var old = lineData;
+        // console.log(lineData.charCodeAt(0), lineData);
+        if (lineData.charCodeAt(0) == 38) { // &
+            lineData = lineData.substr(lineData.lastIndexOf('&nbsp;') + 6);
+            var score = /([0-9]+-[0-9]+\+[0-9]+)(.*)/.exec(lineData);
+            if (score) {
+                // console.log(lineData, "->", score[2]);
+                lineData = score[2];
+            }
         } else {
-            lineData = lineData.substr(0, lineData.indexOf('\t'));
+            lineData = lineData.substr(0, lineData.indexOf('&nbsp;'));
             homeEvent = false;
+            // console.log(lineData);
         }
+        // console.log(time.mmss(), lineData, old);
+        // continue;
 
         function addPlayer(player, homePlayer) {
             if (homePlayer == undefined) {
@@ -99,53 +114,53 @@ function parse(file, home, away, maxTime) {
             if (m2) {
                 game.events.push(new Event(Event.STL, time, homeEvent ? away : home, addPlayer(m2[1], !homeEvent)));
             }
-            return;
+            continue;
         }
 
         m = /Personal foul by ([^\t]*)/.exec(lineData);
         if (m) {
             game.events.push(new Event(Event.PF, time, homeEvent ? home : away, addPlayer(m[1])));
-            return;
+            continue;
         }
 
         if (lineData.indexOf('full timeout') !== -1) {
             game.events.push(new Event(Event.TIMEOUT, time, homeEvent ? home : away));
-            return;
+            continue;
         }
 
         m = /Defensive rebound by (.*)/.exec(lineData);
         if (m) {
             game.events.push(new Event(Event.DRB, time, homeEvent ? home : away, addPlayer(m[1])));
-            return;
+            continue;
         }
 
         m = /Offensive rebound by (.*)/.exec(lineData);
         if (m) {
             game.events.push(new Event(Event.ORB, time, homeEvent ? home : away, addPlayer(m[1])));
-            return;
+            continue;
         }
 
         if (lineData.indexOf('Def 3 sec tech foul by') !== -1) {
             game.events.push(new Event(Event.TF, time, homeEvent ? home : away));
-            return;
-        }
+            continue;
+       }
 
         m = / foul by (.*) \(drawn by [^)]*\)/.exec(lineData);
         if (m) {
             game.events.push(new Event(Event.PF, time, homeEvent ? away : home, addPlayer(m[1], !homeEvent)));
-            return;
+            continue;
         }
 
         m = / foul by (.*)/.exec(lineData);
         if (m) {
             game.events.push(new Event(Event.PF, time, homeEvent ? home : away, addPlayer(m[1])));
-            return;
+            continue;
         }
 
         m = /[Ff]lagrant foul type ([12]) by (.*)/.exec(lineData);
         if (m) {
             game.events.push(new Event(m[1] == '1' ? Event.FF1 : Event.FF2, time, homeEvent ? home : away, addPlayer(m[2])));
-            return;
+            continue;
         }
 
         m = /(.*) enters the game for (.*)/.exec(lineData);
@@ -154,46 +169,57 @@ function parse(file, home, away, maxTime) {
             game.events.push(new Event(Event.SUBBED_OUT, time, homeEvent ? home : away, addPlayer(m[2])));
             game.events.push(new Event(Event.SUBBED_IN, time, homeEvent ? home : away, addPlayer(m[1])));
             // delete lineup[m[2]];
-            return;
+            continue;
         }
 
         m = /(.*) makes ([23])-pt shot /.exec(lineData);
         if (m) {
             game.events.push(new Event(m[2] == '2' ? Event.FGA2 : Event.FGA3, time, homeEvent ? home : away, addPlayer(m[1])));
             game.events.push(new Event(m[2] == '2' ? Event.FGM2 : Event.FGM3, time, homeEvent ? home : away, addPlayer(m[1])));
-            return;
+            continue;
         }
 
         m = /(.*) misses ([23])-pt shot .* \(block by (.*)\)/.exec(lineData);
         if (m) {
             game.events.push(new Event(Event.BLK, time, homeEvent ? away : home, addPlayer(m[3], !homeEvent)));
             game.events.push(new Event(m[2] == '2' ? Event.FGA2 : Event.FGA3, time, homeEvent ? home : away, addPlayer(m[1])));
-            return;
+            continue;
         }
 
         m = /(.*) misses ([23])-pt shot/.exec(lineData);
         if (m) {
             game.events.push(new Event(m[2] == '2' ? Event.FGA2 : Event.FGA3, time, homeEvent ? home : away, addPlayer(m[1])));
-            return;
+            continue;
         }
 
         m = /(.*) misses.*free throw/.exec(lineData);
         if (m) {
             game.events.push(new Event(Event.FTA, time, homeEvent ? home : away, addPlayer(m[1])));
-            return;
+            continue;
         }
 
         m = /(.*) makes.*free throw/.exec(lineData);
         if (m) {
             game.events.push(new Event(Event.FTA, time, homeEvent ? home : away, addPlayer(m[1])));
             game.events.push(new Event(Event.FTM, time, homeEvent ? home : away, addPlayer(m[1])));
-            return;
+            continue;
         }
 
         // console.log(`Unhandled event ${time.minute} ${time.second} ${lineData}`);
-    });
+    }
     // console.log("game events: " + game.events.length);
     // console.log(lines.length);
+    // for (var i=0; i<game.events.length; ++i) {
+    //     var event = game.events[i];
+    //     // if (event.time.value > time.value)
+    //     //     break;
+    //     if (event.team) {
+    //         console.log(`${event.time.mmss()} ${event.team.abbrev} ${Event.eventNames[event.type]} ${event.data}`);
+    //     } else {
+    //         console.log(`${event.time.mmss()} ${Event.eventNames[event.type]} ${event.data}`);
+    //     }
+    // }
+
     var box = new BoxScore(game, maxTime);
     // for (var i=0; i<game.events.length; ++i) {
     //     var event = game.events[i];
@@ -213,7 +239,7 @@ function parse(file, home, away, maxTime) {
 // console.log(Event.TO);
 var home = new Team("Golden State Warriors", "GSW");
 var away = new Team("Cleveland Cavaliers", "CLE");
-parse("../testdata/201701160GSW.txt", home, away);
+parse("../testdata/201701160GSW.html", home, away);
 
 // var home = new Team("Portland Trail Blazers", "POR");
 // var away = new Team("Detroit Pistons", "DET");
