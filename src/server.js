@@ -13,22 +13,36 @@ const League = require('./League.js');
 const zlib = require('zlib');
 const argv = require('yargs').usage("Usage: %0 --game [arg] --max-time [time]").argv;
 
-function parse(file, home, away, maxTime) {
-    var game = new Game(home, away);
-    var quarter = undefined;
+var league = new League;
+function parse(file, maxTime) {
     var html;
     if (/\.gz$/.exec(file)) {
         var gz = fs.readFileSync(file);
-        html = zlib.inflateSync(gz);
+        html = zlib.gunzipSync(gz).toString();
     } else {
         html = fs.readFileSync(file, "utf-8");
     }
+    var title = html.indexOf("<title>");
+    var titleEnd = html.indexOf(" Play-By-Play", title + 7);
+    if (title == -1 || titleEnd == -1)
+        throw "Bad HTML!";
+    var teams = /^(.*) at (.*)$/.exec(html.substring(title + 7, titleEnd));
+
+    var home = league.find(teams[2]);
+    var away = league.find(teams[1]);
+    // console.log(home, away);
+    // return;
+
     var plain = html.replace(/<[^>]*>/g, '');
     var lines = plain.split('\n');
     // console.log(lines);
+    // return;
+    // console.log(lines);
+
+    var game = new Game(home, away);
+    var quarter = undefined;
     var homePlayers = {};
     var awayPlayers = {};
-    var lastLineData = "";
     for (var i=0; i<lines.length; ++i) {
         var line = lines[i];
         var match = /^([0-9][0-9]?):([0-9][0-9])\.0$/.exec(line);
@@ -97,6 +111,7 @@ function parse(file, home, away, maxTime) {
             // console.log(`ADDING ${player} ${homePlayer} ${JSON.stringify(lineup)} ${lineup === homeLineup}`);
             if (!map[player]) {
                 var p = new Player(player);
+                // console.log("ADDED PLAYER", player);
                 map[player] = p;
                 team.players[p.id] = p;
             }
@@ -113,7 +128,7 @@ function parse(file, home, away, maxTime) {
         // }
         // console.log(Object.keys(homeEvent ? homeLineup : awayLineup).length,
         //             JSON.stringify(Object.keys(homeEvent ? homeLineup : awayLineup)), lastLineData);
-        lastLineData = lineData;
+        // console.log(lineData);
         m = /Turnover by (.*) \(([^)]*)\)/.exec(lineData);
         if (m) {
             // console.log(`GOT A TURNOVER ${m[1]} ${m[2]}`);
@@ -123,12 +138,6 @@ function parse(file, home, away, maxTime) {
             if (m2) {
                 game.events.push(new Event(Event.STL, time, homeEvent ? away : home, addPlayer(m2[1], !homeEvent)));
             }
-            continue;
-        }
-
-        m = /Personal foul by ([^\t]*)/.exec(lineData);
-        if (m) {
-            game.events.push(new Event(Event.PF, time, homeEvent ? home : away, addPlayer(m[1])));
             continue;
         }
 
@@ -157,6 +166,12 @@ function parse(file, home, away, maxTime) {
         m = / foul by (.*) \(drawn by [^)]*\)/.exec(lineData);
         if (m) {
             game.events.push(new Event(Event.PF, time, homeEvent ? away : home, addPlayer(m[1], !homeEvent)));
+            continue;
+        }
+
+        m = /Personal foul by ([^\t]*)/.exec(lineData);
+        if (m) {
+            game.events.push(new Event(Event.PF, time, homeEvent ? home : away, addPlayer(m[1])));
             continue;
         }
 
@@ -242,6 +257,10 @@ function parse(file, home, away, maxTime) {
     // }
     // console.log(`${game.away.abbrev} ${box.awayScore} - ${box.homeScore} ${game.home.abbrev}`);
 }
+
+argv._.forEach((arg) => {
+    parse(arg, argv["max-time"] || argv.m);
+});
 
 console.log(argv);
 
