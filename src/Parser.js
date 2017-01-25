@@ -42,6 +42,9 @@ function Parser(league, dir) {
             this.gamesById[id] = gameData;
         }
     });
+    
+    var playersData = fs.readFileSync(`${dir}/../players/players.json`, 'utf8');
+    this.allPlayers = JSON.parse(playersData);
     // console.log(JSON.stringify(this.games, null, 4));
 };
 
@@ -181,8 +184,9 @@ Parser.prototype.parse = function(id, cb) {
                     var linkStart = html.lastIndexOf("<a href=\"", linkEnd);
                     if (linkEnd == -1 || linkStart == -1)
                         throw new Error("Couldn't find " + player + " link");
-                    var link = html.substring(linkStart + 9, linkEnd - 2);
-                    var p = new Player(player, link);
+                    var link = html.substring(linkStart + 9, linkEnd - 1);
+                    var fullName = that.allPlayers[link];
+                    var p = new Player(fullName || player, link);
                     // console.log("ADDED PLAYER", player);
                     map[player] = p;
                     team.players[p.id] = p;
