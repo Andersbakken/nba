@@ -56,4 +56,8 @@ function League()
     };
 }
 
+League.prototype.find = function(nameOrAbbrev) {
+    return this.conferences.Eastern.find(nameOrAbbrev) || this.conferences.Western.find(nameOrAbbrev);
+};
+
 module.exports = League;

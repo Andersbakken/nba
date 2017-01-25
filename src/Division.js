@@ -13,4 +13,20 @@ function Division(name, teams)
     });
 }
 
+Division.prototype.find = function(nameOrAbbrev) {
+    var ret;
+    if (/^[A-Z][A-Z][A-Z]$/.exec(nameOrAbbrev)) {
+        for (var teamName in this.teams) {
+            var t = this.teams[teamName];
+            if (t.abbrev == nameOrAbbrev) {
+                ret = t;
+                break;
+            }
+        }
+    } else {
+        ret = this.teams[nameOrAbbrev];
+    }
+    return ret;
+};
+
 module.exports = Division;
