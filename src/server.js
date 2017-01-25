@@ -42,10 +42,9 @@ function findGame(req, res, next) {
     }
 }
 
-app.get('/api/games/:gameid/events', findGame, (req, res, next) => {
+app.get('/api/games/:gameid', findGame, (req, res, next) => {
     if (req.game) {
-        var events = req.game.events.map(event => req.game.encodeEvent(event));
-        res.send(JSON.stringify(events));
+        res.send(JSON.stringify(req.game.encode(league)));
     } else {
         res.sendStatus(404);
     }
