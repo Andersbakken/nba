@@ -13,7 +13,7 @@ var parser = new Parser(league, argv.d || argv.dir || (__dirname + "/../nba-game
 
 var app = express();
 
-app.get('/api/piallgames', (req, res) => {
+app.get('/api/allgames', (req, res) => {
     res.send(JSON.stringify(parser.games));
 });
 
