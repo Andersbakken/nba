@@ -26,6 +26,31 @@ app.get('/api/games', (req, res) => {
     // res.send(JSON.stringify(Object.keys(parser.games)));
 });
 
+function findGame(req, res, next) {
+    var game = parser.gamesById[req.params.gameid];
+    if (game) {
+        parser.parse(req.params.gameid, function(err, game) {
+            if (err) {
+                next(new Error(err))
+            } else {
+                req.game = game;
+                next();
+            }
+        });
+    } else {
+        next();
+    }
+}
+
+app.get('/api/games/:gameid/events', findGame, (req, res, next) => {
+    if (req.game) {
+        var events = req.game.events.map(event => req.game.encodeEvent(event));
+        res.send(JSON.stringify(events));
+    } else {
+        res.sendStatus(404);
+    }
+});
+
 app.get("/", (req, res) => {
     res.redirect("/index.html");
 });

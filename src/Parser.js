@@ -11,6 +11,7 @@ const League = require('./League.js');
 const zlib = require('zlib');
 
 function Parser(league, dir) {
+    this.dir = dir;
     this.league = league;
     this.gamesById = {};
     this.games = {};
@@ -46,14 +47,16 @@ function Parser(league, dir) {
 
 Parser.prototype.parse = function(id, cb) {
     var html;
-    var file = this.games[id];
-    if (!file) {
+    var game = this.gamesById[id];
+    if (!game) {
         cb("Invalid id " + id);
         return;
     }
 
+    // TODO: look for HTML file first?
+    var file = `${game.id}.html.gz`;
     if (/\.gz$/.exec(file)) {
-        fs.readFileSync(file, function(error, gz) {
+        fs.readFile(this.dir + '/' + file, function(error, gz) {
             if (error) {
                 cb(error);
                 return;
@@ -67,7 +70,7 @@ Parser.prototype.parse = function(id, cb) {
             });
         });
     } else {
-        html = fs.readFile(file, "utf-8", function(error, html) {
+        html = fs.readFile(this.dir + '/' + file, "utf-8", function(error, html) {
             if (error) {
                 cb(error);
                 return;
@@ -86,8 +89,8 @@ Parser.prototype.parse = function(id, cb) {
         }
         var teams = /^(.*) at (.*)$/.exec(html.substring(title + 7, titleEnd));
 
-        var home = this.league.find(teams[2]);
-        var away = this.league.find(teams[1]);
+        var home = that.league.find(teams[2]);
+        var away = that.league.find(teams[1]);
         if (!home) {
             cb("Can't find home team from " + teams[2]);
             return;
