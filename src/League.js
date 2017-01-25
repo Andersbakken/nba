@@ -2,6 +2,7 @@
 
 const Conference = require('./Conference.js');
 const Division = require('./Division.js');
+const Player = require('./Player.js');
 const Team = require('./Team.js');
 
 function League()
@@ -55,6 +56,30 @@ function League()
         ])
     };
 }
+
+League.prototype.encodeTeam = function(team) {
+    var ret = {
+        name: team.name,
+        players: []
+    };
+    for (var playerId in team.players) {
+        ret.players.push(team.players[playerId].encode());
+    }
+    return ret;
+};
+League.prototype.decodeTeam = function(object) {
+    var team = this.find(object.name);
+    if (!team)
+        throw new Error("Bad team object: " + object);
+    object.players.forEach((data) => {
+        var player = Player.decode(data);
+        if (!(player instanceof Player)) {
+            throw new Error("Bad player data: " + data);
+        }
+        team.players[player.id] = player;
+    });
+    return team;
+};
 
 League.prototype.find = function(nameOrAbbrev) {
     return this.conferences.Eastern.find(nameOrAbbrev) || this.conferences.Western.find(nameOrAbbrev);

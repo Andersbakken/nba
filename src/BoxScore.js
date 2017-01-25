@@ -12,21 +12,20 @@ function BoxScore(game, maxTime)
     this.players = {}; // playerId to array
     this.awayStats = values();
     this.homeStats = values();
-
-    var awayPlayers = [];
-    var homePlayers = [];
+    this.awayPlayers = [];
+    this.homePlayers = [];
 
     var player;
     // var longest = 0;
     for (player in game.away.players) {
         this.players[game.away.players[player].id] = values();
-        awayPlayers.push(game.away.players[player]);
+        this.awayPlayers.push(game.away.players[player]);
         // longest = Math.max(longest, player.length);
     }
 
     for (player in game.home.players) {
         this.players[game.home.players[player].id] = values();
-        homePlayers.push(game.home.players[player]);
+        this.homePlayers.push(game.home.players[player]);
         // console.log("players", player, game.home.players[player]);
         // longest = Math.max(longest, player.length);
     }
@@ -124,6 +123,9 @@ function BoxScore(game, maxTime)
     }
     processSubs(homeSubs);
     processSubs(awaySubs);
+};
+
+BoxScore.prototype.print = function() {
     // console.log(this.players);
 
     function pad(text, width, padChar) {
@@ -147,8 +149,9 @@ function BoxScore(game, maxTime)
         return pad((m / a).toFixed(3).substr(1), 6);
     }
 
+    var that = this;
     function formatTeam(team, players) {
-        var stats = (team == game.home ? that.homeStats : that.awayStats);
+        var stats = (team == that.game.home ? that.homeStats : that.awayStats);
         console.log(team.name + " - " + stats[Event.PTS]);
         console.log("----------------------------------------------------------------------------------------------------------------------------------");
         console.log("Player             MIN   FGM   FGA   FG%   3PM   3PA   3P%   FTM   FTA   FT%   ORB   DRB   TRB   AST   STL   BLK   TOV    PF   PTS");
@@ -189,9 +192,9 @@ function BoxScore(game, maxTime)
         formatLine("Total", stats);
         console.log("----------------------------------------------------------------------------------------------------------------------------");
     }
-    formatTeam(game.away, awayPlayers);
+    formatTeam(this.game.away, this.awayPlayers);
     console.log();
-    formatTeam(game.home, homePlayers);
-}
+    formatTeam(this.game.home, this.homePlayers);
+};
 
 module.exports = BoxScore;

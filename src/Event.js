@@ -1,4 +1,9 @@
-/*global module */
+/*global module, require */
+
+const Game = require('./Game.js');
+const Team = require('./Team.js');
+const Player = require('./Player.js');
+const Time = require('./Time.js');
 
 function Event(type, time, team, data)
 {
@@ -46,7 +51,7 @@ Event.eventNames = (function() {
     var ret = {};
     Object.keys(Event).forEach(function(key) {
         var val = Event[key];
-        if (typeof val == 'number') {
+        if (typeof val === 'number') {
             ret[val] = key;
         }
     });

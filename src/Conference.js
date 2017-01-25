@@ -1,10 +1,8 @@
 /* global module */
 
-var nextConferenceId = 2048;
 function Conference(name, divisions)
 {
     this.name = name;
-    this.id = ++nextConferenceId;
     this.divisions = {};
     divisions.forEach((div) => {
         div.conference = this;

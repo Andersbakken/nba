@@ -1,12 +1,13 @@
-/*global module */
+/*global module, require */
+const Player = require('./Player.js');
 
 var nextTeamId = 1024;
 function Team(name, abbrev)
 {
     this.name = name;
     this.abbrev = abbrev;
-    this.id = ++nextTeamId;
     this.division = undefined;
+    this.id = ++nextTeamId;
     this.conference = undefined;
     var date = new Date();
     var year = date.getMonth() >= 9 ? date.getYear() + 1 : date.getYear();

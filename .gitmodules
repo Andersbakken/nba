@@ -1,0 +1,3 @@
+[submodule "nba-gamedata"]
+	path = nba-gamedata
+	url = git@github.com:Andersbakken/nba-gamedata.git

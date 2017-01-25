@@ -1,9 +1,9 @@
 /*global module */
 
-function Time(ms)
+function Time(ms, end)
 {
     this.time = new Date(ms);
-    this.end = false;
+    this.end = end || false;
 }
 Time.prototype = {
     get milliseconds() { return this.time.getMilliseconds(); },
