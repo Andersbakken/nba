@@ -7,7 +7,14 @@ const request = require('request');
 function Net(options)
 {
     this.options = options;
-    if (!/\/$/.exec(options.cacheDir) || (!safe.fs.statSync(options.cacheDir).isDirectory() && !safe.fs.mkdirSync(options.cacheDir))) {
+    var good = false;
+    if (/\/$/.exec(options.cacheDir)) {
+        var stat = safe.fs.statSync(options.cacheDir);
+        if ((!stat && safe.fs.mkdirSync(options.cacheDir)) || stat.isDirectory()) {
+            good = true;
+        }
+    }
+    if (!good) {
         throw new Error("Bad cacheDir " + options.cacheDir);
     }
 
@@ -36,6 +43,7 @@ function Request(url, filename, cb) {
         if (response.statusCode == 200) {
             safe.fs.writeFileSync(filename, JSON.stringify(data));
         }
+        data.url = url;
         data.source = "network";
         this.callbacks.forEach((callback) => {
             callback(undefined, data);
@@ -54,6 +62,7 @@ Net.prototype.get = function(req, cb) {
         if (!data) { // cache gone bad, repair
             safe.fs.unlinkSync(fileName);
         } else {
+            data.url = req.url;
             data.source = "cache";
             cb(undefined, data);
             return;
@@ -65,6 +74,13 @@ Net.prototype.get = function(req, cb) {
     }
 
     this.requests[req.url] = new Request(req.url, fileName, cb);
+};
+
+Net.prototype.clearCache = function(url) {
+    if (url instanceof Object)
+        url = url.url;
+    var fileName = this.options.cacheDir + encodeURIComponent(url);
+    safe.fs.unlinkSync(fileName);
 };
 
 module.exports = Net;
