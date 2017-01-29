@@ -71,7 +71,7 @@ function findGame(req, res, next) {
 
 app.get('/api/games/:gameid', findGame, (req, res, next) => {
     if (req.game) {
-        res.send(JSON.stringify(req.game));
+        res.send(req.game);
     } else {
         res.sendStatus(404);
     }

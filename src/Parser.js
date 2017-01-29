@@ -42,7 +42,7 @@ function Parser(league, dir) {
             this.gamesById[id] = gameData;
         }
     });
-    
+
     var playersData = fs.readFileSync(`${dir}/../players/players.json`, 'utf8');
     this.allPlayers = JSON.parse(playersData);
     // console.log(JSON.stringify(this.games, null, 4));
