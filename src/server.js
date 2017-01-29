@@ -7,11 +7,13 @@ const Parser = require('./Parser.js');
 const League = require('./League.js');
 const express = require('express');
 const fs = require('fs');
+const Net = require('./Net.js');
 
 var league = new League;
 var parser = new Parser(league, argv.d || argv.dir || (__dirname + "/../nba-gamedata/data"));
 
 var app = express();
+var net = new Net({cacheDir: (argv.cacheDir || __dirname + "/cache/") });
 
 app.get('/api/allgames', (req, res) => {
     res.send(JSON.stringify(parser.games));
@@ -31,7 +33,7 @@ function findGame(req, res, next) {
     if (game) {
         parser.parse(req.params.gameid, function(err, game) {
             if (err) {
-                next(new Error(err))
+                next(new Error(err));
             } else {
                 req.game = game;
                 next();
@@ -61,8 +63,15 @@ fs.readdirSync(__dirname + "/www/").forEach((file) => {
     });
 });
 
+
+
 app.listen(argv.port || argv.p || 8899, () => {
     console.log("Listening on port", (argv.port || argv.p || 8899));
+});
+
+net.get("http://www.nba.com/data/10s/prod/v1/2016/schedule.json", (error, response) => {
+    console.log("GOT RESPONSE", error, response);
+    // console.log(response);
 });
 
 // argv._.forEach((arg) => {
