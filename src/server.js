@@ -10,8 +10,10 @@ const express = require('express');
 const fs = require('fs');
 const Net = require('./Net.js');
 const NBA = require('./NBA.js');
+const BoxScore = require('./BoxScore.js');
 const bsearch = require('binary-search');
 const parseGame = require('./GameParser.js');
+
 const lowerBound = function(haystack, needle, comparator) {
     var idx = bsearch(haystack, needle, comparator);
     if (idx < 0)
@@ -83,6 +85,8 @@ function findGame(req, res, next) {
 app.get('/api/games/:gameid', findGame, (req, res, next) => {
     if (req.game) {
         res.send(req.game.encode(league));
+        var box = new BoxScore(req.game);
+        box.print();
     } else {
         res.sendStatus(404);
     }
