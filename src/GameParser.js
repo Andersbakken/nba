@@ -5,7 +5,45 @@ const League = require('./League.js');
 const Team = require('./Team.js');
 const Time = require('./Time.js');
 const Player = require('./Player.js');
+const Event = require('./Event.js');
 const assert = require('assert');
+
+/*
+ "GAME_ID",
+ "EVENTNUM",
+ "EVENTMSGTYPE",
+ "EVENTMSGACTIONTYPE",
+ "PERIOD",
+ "WCTIMESTRING",
+ "PCTIMESTRING",
+ "HOMEDESCRIPTION",
+ "NEUTRALDESCRIPTION",
+ "VISITORDESCRIPTION",
+ "SCORE",
+ "SCOREMARGIN",
+ "PERSON1TYPE",
+ "PLAYER1_ID",
+ "PLAYER1_NAME",
+ "PLAYER1_TEAM_ID",
+ "PLAYER1_TEAM_CITY",
+ "PLAYER1_TEAM_NICKNAME",
+ "PLAYER1_TEAM_ABBREVIATION",
+ "PERSON2TYPE",
+ "PLAYER2_ID",
+ "PLAYER2_NAME",
+ "PLAYER2_TEAM_ID",
+ "PLAYER2_TEAM_CITY",
+ "PLAYER2_TEAM_NICKNAME",
+ "PLAYER2_TEAM_ABBREVIATION",
+ "PERSON3TYPE",
+ "PLAYER3_ID",
+ "PLAYER3_NAME",
+ "PLAYER3_TEAM_ID",
+ "PLAYER3_TEAM_CITY",
+ "PLAYER3_TEAM_NICKNAME",
+ "PLAYER3_TEAM_ABBREVIATION"
+ */
+
 
 function GameParser(league, nbaData, cb) {
     // var title = html.indexOf("<title>");
@@ -31,7 +69,6 @@ function GameParser(league, nbaData, cb) {
 
     var home = league.find(rowSet[1][indexes.PLAYER1_TEAM_ABBREVIATION]);
     var away = league.find(rowSet[1][indexes.PLAYER2_TEAM_ABBREVIATION]);
-    console.log(typeof home, typeof away, indexes);
     if (!home) {
         cb("Can't find home team from " + rowSet[1][indexes.PLAYER1_TEAM_ABBREVIATION]);
         return;
@@ -40,6 +77,8 @@ function GameParser(league, nbaData, cb) {
         cb("Can't find away team from " + rowSet[1][indexes.PLAYER2_TEAM_ABBREVIATION]);
         return;
     }
+    var homeId = rowSet[1][indexes.PLAYER1_TEAM_ID];
+    var awayId = rowSet[1][indexes.PLAYER2_TEAM_ID];
 
     // var plain = html.replace(/<[^>]*>/g, '');
     // var lines = plain.split('\n');
@@ -53,6 +92,8 @@ function GameParser(league, nbaData, cb) {
 
     // 0 is empty, 1 is jump ball, ### What if there's a foul on the jump ball?
     function piece(name) { return rowSet[i][indexes[name]]; }
+    var lastTeamMiss;
+    var currentQuarter;
     for (i=2; i<rowSet.length; ++i) {
         if (piece("NEUTRALDESCRIPTION"))
             continue;
@@ -61,6 +102,12 @@ function GameParser(league, nbaData, cb) {
         // if (!homeDescription && visitorDescription)
         //     continue;
         var quarter = piece("PERIOD") - 1;
+        if (quarter != currentQuarter) {
+            if (currentQuarter != undefined)
+                game.events.push(new Event(Event.QUARTER_END, Time.quarterEnd(currentQuarter), undefined, quarter));
+            currentQuarter = quarter;
+            game.events.push(new Event(Event.QUARTER_START, Time.quarterStart(quarter), undefined, quarter));
+        }
         var time = Time.quarterEnd(quarter);
         var timeLeft = piece("PCTIMESTRING").split(':');
         time.add(-(parseInt(timeLeft[0]) * 60 * 1000));
@@ -70,22 +117,118 @@ function GameParser(league, nbaData, cb) {
         // continue;
         // var homeEvent = !visitorDescription || /STL\)$/.exec(visitorDescription) != null;
         // var description = homeEvent ? homeDescription : visitorDescription;
-        function process(home) {
-            var description = home ? piece("HOMEDESCRIPTION") : piece("VISITORDESCRIPTION");
+        function process(homeEvent) {
+            function addPlayer(idx) {
+                var teamId = piece(`PLAYER${idx}_TEAM_ID`);
+                if (teamId) {
+                    var players = teamId == homeId ? homePlayers : awayPlayers;
+                    var id = piece(`PLAYER${idx}_ID`);
+                    if (!players[id]) {
+                        players[id] = new Player(piece(`PLAYER${idx}_NAME`), id);
+                    }
+                    return players[id];
+                }
+                return undefined;
+            }
+            function assist()
+            {
+                var player = addPlayer(2);
+                if (player)
+                    game.events.push(new Event(Event.AST, time, homeEvent ? home : away, player));
+            }
+            function madeShot(attempt, make)
+            {
+                var shooter = addPlayer(1);
+                game.events.push(new Event(attempt , time, homeEvent ? home : away, shooter));
+                game.events.push(new Event(make, time, homeEvent ? home : away, shooter));
+            }
+            var description = homeEvent ? piece("HOMEDESCRIPTION") : piece("VISITORDESCRIPTION");
             if (!description)
                 return;
-            // if (/ Turnover:
-            // if (/ Turnover \(/.exec(description))
+            // ### need to handle team turnover
+            if (/ Turnover \(/.exec(description)) {
+                game.events.push(new Event(Event.TO, time, homeEvent ? home : away, addPlayer(1)));
+                return;
+            }
+
+            if (/ STL\)$/.exec(description)) {
+                game.events.push(new Event(Event.STL, time, homeEvent ? home : away, addPlayer(2)));
+                return;
+            }
+
+            if (/Timeout: Short/.exec(description)) {
+                game.events.push(new Event(Event.TIMEOUT_20S, time, homeEvent ? home : away));
+                return;
+            }
+
+            if (/Timeout: Regular/.exec(description)) {
+                game.events.push(new Event(Event.TIMEOUT, time, homeEvent ? home : away));
+                return;
+            }
+
+            if (/ Rebound$/.exec(description)) { // team rebound
+                game.events.push(new Event(Event.TRB, time, homeEvent ? home : away));
+                return;
+            }
+
+            if (/ REBOUND \(/.exec(description)) {
+                var reboundType = piece(`PLAYER1_TEAM_ID`) == lastTeamMiss ? Event.ORB : Event.DRB;
+                game.events.push(new Event(reboundType, time, homeEvent ? home : away, addPlayer(1)));
+                return;
+            }
+
+            if (/\<Foul \(/.exec(description) || /\.FOUL \(/.exec(description)) {
+                game.events.push(new Event(Event.PF, time, homeEvent ? away : home, addPlayer(1)));
+                return;
+            }
+
+            if (/^SUB: /.exec(description)) {
+                game.events.push(new Event(Event.SUBBED_OUT, time, homeEvent ? home : away, addPlayer(1)));
+                game.events.push(new Event(Event.SUBBED_IN, time, homeEvent ? home : away, addPlayer(2)));
+                return;
+            }
+
+            if (/^Miss .*Free Throw [123] of/.exec(description)) {
+                game.events.push(new Event(Event.FTA, time, homeEvent ? home : away, addPlayer(1)));
+                return;
+            }
+
+            if (/ Free Throw [123] of/.exec(description)) {
+                madeShot(Event.FTA, Event.FTM);
+                return;
+            }
+
+            if (/^MISS .* 3PT $/.exec(description)) {
+                game.events.push(new Event(Event.FGA3, time, homeEvent ? home : away, addPlayer(1)));
+                return;
+            }
+
+            if (/^MISS /.exec(description)) {
+                game.events.push(new Event(Event.FGA2, time, homeEvent ? home : away, addPlayer(1)));
+                return;
+            }
+
+            if (/ 3PT .* [0-9] PTS\)/.exec(description)) {
+                assist();
+                madeShot(Event.FGA3, Event.FGM3);
+                return;
+            }
+
+            if (/ [0-9] PTS\)/.exec(description)) {
+                assist();
+                madeShot(Event.FGA2, Event.FGM2);
+                return;
+            }
+
+            console.log("unhandled event", rowSet[i]);
         }
+        process(true);
+        process(false);
+    }
+    game.events.push(new Event(Event.QUARTER_END, Time.quarterEnd(currentQuarter), undefined, quarter));
+
         // var otherDescription = homeEvent ? visitorDescription : homeDescription;
 
-        if (homeDescription) {
-
-
-        } else {
-
-
-        }
         /*
 
         function addPlayer(player, homePlayer) {
@@ -227,7 +370,7 @@ function GameParser(league, nbaData, cb) {
         }
 
      // console.log(`Unhandled event ${time.minute} ${time.second} ${lineData}`);
-     */
+         */
     cb(undefined, game);
 }
 

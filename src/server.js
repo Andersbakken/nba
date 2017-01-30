@@ -43,10 +43,12 @@ function gamesByDate(req, res, next) {
         return l.gameTime.valueOf() - r.gameTime.valueOf();
     });
     req.games = [];
-    do {
-        var teams = /([A-Z][A-Z][A-Z])([A-Z][A-Z][A-Z])$/.exec(schedule[idx].gameUrlCode);
-        req.games.push({ home: teams[2], away: teams[1], gameId: schedule[idx].gameId, gameTime: schedule[idx].gameTime });
-    } while (++idx < schedule.length && schedule[idx].gameTime.getDate() == date.getDate());
+    if (idx < schedule.length) {
+        do {
+            var teams = /([A-Z][A-Z][A-Z])([A-Z][A-Z][A-Z])$/.exec(schedule[idx].gameUrlCode);
+            req.games.push({ home: teams[2], away: teams[1], gameId: schedule[idx].gameId, gameTime: schedule[idx].gameTime });
+        } while (++idx < schedule.length && schedule[idx].gameTime.getDate() == date.getDate());
+    }
     next();
 }
 
@@ -105,7 +107,6 @@ net.get('http://www.nba.com/data/10s/prod/v1/' + (NBA.currentSeasonYear() - 1) +
     }
     var parsed = safe.JSON.parse(response.body);
     if (!parsed) {
-        console.log(response.url);
         console.error("Couldn't parse schedule " + response.url);
         net.clearCache(response.url);
         process.exit(1);
@@ -114,10 +115,6 @@ net.get('http://www.nba.com/data/10s/prod/v1/' + (NBA.currentSeasonYear() - 1) +
     schedule = parsed.league.standard;
     for (var idx=0; idx<schedule.length; ++idx) {
         schedule[idx].gameTime = new Date(schedule[idx].startTimeUTC);
-        if (!schedule[idx].gameTime) {
-            console.log("SHITTY", schedule[idx].startTimeUTC);
-        }
-        // console.log(schedule[idx].gameTime);
     }
     // console.log(JSON.stringify(schedule[0], null, 4));
     // console.log("GOT RESPONSE", error, response);
