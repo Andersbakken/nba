@@ -237,6 +237,9 @@ function GameParser(league, nbaData, cb) {
             if (/ Violation:/.exec(description))
                 return;
 
+            if (/^Jump Ball /.exec(description))
+                return;
+
             console.log("unhandled event", home, description, rowSet[i]);
         }
         process(true);
