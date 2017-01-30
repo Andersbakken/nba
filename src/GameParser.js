@@ -144,6 +144,11 @@ function GameParser(league, nbaData, cb) {
                 return;
             }
 
+            if (/ Turnover: /.exec(description)) {
+                game.events.push(new Event(Event.TO, time, homeEvent ? home : away));
+                return;
+            }
+
             if (/ STL\)$/.exec(description)) {
                 game.events.push(new Event(Event.STL, time, homeEvent ? home : away, addPlayer(2)));
                 return;
