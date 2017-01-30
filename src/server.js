@@ -11,6 +11,7 @@ const fs = require('fs');
 const Net = require('./Net.js');
 const NBA = require('./NBA.js');
 const bsearch = require('binary-search');
+const parseGame = require('./GameParser.js');
 const lowerBound = function(haystack, needle, comparator) {
     var idx = bsearch(haystack, needle, comparator);
     if (idx < 0)
@@ -65,13 +66,21 @@ function findGame(req, res, next) {
         }
         // console.log("GOT GAME", JSON.stringify(JSON.parse(data.body), undefined, 4));
         req.game = data.body;
-        next();
+        safe.fs.writeFileSync("/tmp/game.json", JSON.stringify(JSON.parse(data.body), undefined, 4));
+        parseGame(league, JSON.parse(data.body), function(error, game) {
+            if (error) {
+                next(new Error(error));
+            } else {
+                req.game = game;
+                next();
+            }
+        });
     });
 }
 
 app.get('/api/games/:gameid', findGame, (req, res, next) => {
     if (req.game) {
-        res.send(req.game);
+        res.send(req.game.encode(league));
     } else {
         res.sendStatus(404);
     }
