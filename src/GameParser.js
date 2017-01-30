@@ -230,7 +230,7 @@ function GameParser(league, nbaData, cb) {
             }
 
             if (/\([0-9]+ BLK\)/.exec(description)) {
-                game.events.push(new Event(Event.BLK, time, homeEvent ? away : home, addPlayer(3)));
+                game.events.push(new Event(Event.BLK, time, homeEvent ? home : away, addPlayer(3)));
                 return;
             }
 
