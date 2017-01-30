@@ -198,6 +198,7 @@ function GameParser(league, nbaData, cb) {
             }
 
             if (/^Miss .*Free Throw [123] of/.exec(description)) {
+                lastTeamMiss = (homeEvent ? home : away).id;
                 game.events.push(new Event(Event.FTA, time, homeEvent ? home : away, addPlayer(1)));
                 return;
             }
@@ -208,11 +209,13 @@ function GameParser(league, nbaData, cb) {
             }
 
             if (/^MISS .* 3PT $/.exec(description)) {
+                lastTeamMiss = (homeEvent ? home : away).id;
                 game.events.push(new Event(Event.FGA3, time, homeEvent ? home : away, addPlayer(1)));
                 return;
             }
 
             if (/^MISS /.exec(description)) {
+                lastTeamMiss = (homeEvent ? home : away).id;
                 game.events.push(new Event(Event.FGA2, time, homeEvent ? home : away, addPlayer(1)));
                 return;
             }
