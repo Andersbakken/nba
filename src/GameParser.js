@@ -97,10 +97,6 @@ function GameParser(league, nbaData, cb) {
     for (i=2; i<rowSet.length; ++i) {
         if (piece("NEUTRALDESCRIPTION"))
             continue;
-        var homeDescription = piece("HOMEDESCRIPTION");
-        // var visitorDescription = piece("VISITORDESCRIPTION");
-        // if (!homeDescription && visitorDescription)
-        //     continue;
         var quarter = piece("PERIOD") - 1;
         if (quarter != currentQuarter) {
             if (currentQuarter != undefined)
@@ -112,11 +108,6 @@ function GameParser(league, nbaData, cb) {
         var timeLeft = piece("PCTIMESTRING").split(':');
         time.add(-(parseInt(timeLeft[0]) * 60 * 1000));
         time.add(-(parseInt(timeLeft[1]) * 1000));
-        // console.log(lineData.charCodeAt(0), lineData);
-        // console.log(time.mmss(), lineData, old);
-        // continue;
-        // var homeEvent = !visitorDescription || /STL\)$/.exec(visitorDescription) != null;
-        // var description = homeEvent ? homeDescription : visitorDescription;
         function process(homeEvent) {
             function addPlayer(idx) {
                 var teamId = piece(`PLAYER${idx}_TEAM_ID`);
@@ -125,6 +116,8 @@ function GameParser(league, nbaData, cb) {
                     var id = piece(`PLAYER${idx}_ID`);
                     if (!players[id]) {
                         players[id] = new Player(piece(`PLAYER${idx}_NAME`), id);
+                        var team = teamId == homeId ? home : away;
+                        team.players[id] = players[id];
                     }
                     return players[id];
                 }
@@ -177,7 +170,7 @@ function GameParser(league, nbaData, cb) {
                 return;
             }
 
-            if (/\<Foul \(/.exec(description) || /\.FOUL \(/.exec(description)) {
+            if (/ Foul \(/.exec(description) || /\.FOUL \(/.exec(description) || /\.Foul \(/.exec(description)) {
                 game.events.push(new Event(Event.PF, time, homeEvent ? away : home, addPlayer(1)));
                 return;
             }
@@ -214,13 +207,21 @@ function GameParser(league, nbaData, cb) {
                 return;
             }
 
-            if (/ [0-9] PTS\)/.exec(description)) {
+            if (/\([0-9]+ PTS\)/.exec(description)) {
                 assist();
                 madeShot(Event.FGA2, Event.FGM2);
                 return;
             }
 
-            console.log("unhandled event", rowSet[i]);
+            if (/\([0-9]+ BLK\)/.exec(description)) {
+                game.events.push(new Event(Event.BLK, time, homeEvent ? away : home, addPlayer(3)));
+                return;
+            }
+
+            if (/ Violation:/.exec(description))
+                return;
+
+            console.log("unhandled event", home, description, rowSet[i]);
         }
         process(true);
         process(false);
