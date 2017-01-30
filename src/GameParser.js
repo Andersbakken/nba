@@ -175,8 +175,19 @@ function GameParser(league, nbaData, cb) {
                 return;
             }
 
+            var match = /FLAGRANT\.FOUL\.TYPE([12]) /.exec(description);
+            if (match) {
+                game.events.push(new Event(match[1] == '1' ? Event.FF1 : Event.FF2, time, homeEvent ? home : away, addPlayer(1)));
+                return;
+            }
+
+            if (/T\.FOUL \(/.exec(description)) {
+                game.events.push(new Event(Event.TF, time, homeEvent ? home : away, addPlayer(1)));
+                return;
+            }
+
             if (/ Foul \(/.exec(description) || /\.FOUL \(/.exec(description) || /\.Foul \(/.exec(description)) {
-                game.events.push(new Event(Event.PF, time, homeEvent ? away : home, addPlayer(1)));
+                game.events.push(new Event(Event.PF, time, homeEvent ? home : away, addPlayer(1)));
                 return;
             }
 
