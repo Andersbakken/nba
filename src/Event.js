@@ -13,6 +13,14 @@ function Event(type, time, team, data)
     this.data = data;
 }
 
+Event.prototype.toString = function() {
+    var evName = Event.eventNames[this.type];
+    var player = this.data instanceof Player ? this.data.name : "";
+    var team = this.team.name;
+    var time = this.time.mmss();
+    return `Event(${time}: ${evName} ${player} ${team})`;
+};
+
 // scores
 Event.PTS = 0;
 Event.FGA2 = 1;
