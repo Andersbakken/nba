@@ -15,19 +15,17 @@ function BoxScore(game, maxTime)
     this.awayPlayers = [];
     this.homePlayers = [];
 
-    var player;
-    // var longest = 0;
+    var player, p;
     for (player in game.away.players) {
-        this.players[game.away.players[player].id] = values();
-        this.awayPlayers.push(game.away.players[player]);
-        // longest = Math.max(longest, player.length);
+        p = game.away.players[player];
+        this.players[player] = values();
+        this.awayPlayers.push(p);
     }
 
     for (player in game.home.players) {
-        this.players[game.home.players[player].id] = values();
-        this.homePlayers.push(game.home.players[player]);
-        // console.log("players", player, game.home.players[player]);
-        // longest = Math.max(longest, player.length);
+        p = game.home.players[player];
+        this.players[player] = values();
+        this.homePlayers.push(p);
     }
 
     var homeLineup = {};
@@ -153,9 +151,9 @@ BoxScore.prototype.print = function() {
     function formatTeam(team, players) {
         var stats = (team == that.game.home ? that.homeStats : that.awayStats);
         console.log(team.name + " - " + stats[Event.PTS]);
-        console.log("----------------------------------------------------------------------------------------------------------------------------------");
-        console.log("Player             MIN   FGM   FGA   FG%   3PM   3PA   3P%   FTM   FTA   FT%   ORB   DRB   TRB   AST   STL   BLK   TOV    PF   PTS");
-        console.log("----------------------------------------------------------------------------------------------------------------------------------");
+        console.log("----------------------------------------------------------------------------------------------------------------------------------------");
+        console.log("Player                   MIN   FGM   FGA   FG%   3PM   3PA   3P%   FTM   FTA   FT%   ORB   DRB   TRB   AST   STL   BLK   TOV    PF   PTS");
+        console.log("----------------------------------------------------------------------------------------------------------------------------------------");
 
         var sorted = players.sort(function(l, r) {
             var ll = that.players[l.id];
@@ -165,7 +163,7 @@ BoxScore.prototype.print = function() {
             return rr[Event.PTS] - ll[Event.PTS];
         });
         function formatLine(name, stats) {
-            var str = pad(name, 16);
+            var str = pad(name, 22);
             str += pad(stats[Event.MINUTES], 6);
             str += pad(stats[Event.FGM2] + stats[Event.FGM3], 6);
             str += pad(stats[Event.FGA2] + stats[Event.FGA3], 6);
@@ -188,9 +186,9 @@ BoxScore.prototype.print = function() {
             console.log(str);
         }
         sorted.forEach(function(player) { formatLine(player.name, that.players[player.id]); });
-        console.log("----------------------------------------------------------------------------------------------------------------------------");
+        console.log("----------------------------------------------------------------------------------------------------------------------------------------");
         formatLine("Total", stats);
-        console.log("----------------------------------------------------------------------------------------------------------------------------");
+        console.log("----------------------------------------------------------------------------------------------------------------------------------------");
     }
     formatTeam(this.game.away, this.awayPlayers);
     console.log();
