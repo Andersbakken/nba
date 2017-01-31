@@ -197,7 +197,7 @@ function GameParser(league, nbaData, cb) {
                 return;
             }
 
-            if (/^Miss .*Free Throw [123] of/.exec(description)) {
+            if (/^MISS .*Free Throw [123] of/.exec(description)) {
                 lastTeamMiss = (homeEvent ? home : away).id;
                 game.events.push(new Event(Event.FTA, time, homeEvent ? home : away, addPlayer(1)));
                 return;
@@ -208,7 +208,7 @@ function GameParser(league, nbaData, cb) {
                 return;
             }
 
-            if (/^MISS .* 3PT $/.exec(description)) {
+            if (/^MISS .* 3PT /.exec(description)) {
                 lastTeamMiss = (homeEvent ? home : away).id;
                 game.events.push(new Event(Event.FGA3, time, homeEvent ? home : away, addPlayer(1)));
                 return;
@@ -220,7 +220,7 @@ function GameParser(league, nbaData, cb) {
                 return;
             }
 
-            if (/ 3PT .* [0-9] PTS\)/.exec(description)) {
+            if (/ 3PT .* \([0-9]+ PTS\)/.exec(description)) {
                 assist();
                 madeShot(Event.FGA3, Event.FGM3);
                 return;
