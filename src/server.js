@@ -3,14 +3,12 @@
 /*global require, __dirname */
 const argv = require('yargs').usage("Usage: %0 --game [arg] --max-time [time]").argv;
 
-const League = require('./League.js');
+const NBA = require('./NBA.js');
 const process = require('process');
 const safe = require('safetydance');
 const express = require('express');
 const fs = require('fs');
 const Net = require('./Net.js');
-const NBA = require('./NBA.js');
-const BoxScore = require('./BoxScore.js');
 const bsearch = require('binary-search');
 const parseGame = require('./GameParser.js');
 
@@ -24,7 +22,7 @@ const lowerBound = function(haystack, needle, comparator) {
 };
 var schedule;
 
-var league = new League;
+var league = new NBA.League;
 
 var app = express();
 var net = new Net({cacheDir: (argv.cacheDir || __dirname + "/cache/") });
@@ -86,7 +84,7 @@ function findGame(req, res, next) {
 app.get('/api/games/:gameid', findGame, (req, res, next) => {
     if (req.game) {
         res.send(req.game.encode(league));
-        var box = new BoxScore(req.game);
+        var box = new NBA.BoxScore(req.game);
         box.print();
     } else {
         res.sendStatus(404);
