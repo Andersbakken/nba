@@ -123,6 +123,58 @@ function BoxScore(game, maxTime)
     processSubs(awaySubs);
 };
 
+BoxScore.prototype.encode = function() {
+    var that = this;
+    function formatTeam(team, players, stats) {
+        var sorted = players.sort(function(l, r) {
+            var ll = that.players[l.id];
+            var rr = that.players[r.id];
+            if (ll[GameEvent.STARTED] != rr[GameEvent.STARTED])
+                return ll[GameEvent.STARTED] ? -1 : 1;
+            return rr[GameEvent.PTS] - ll[GameEvent.PTS];
+        });
+        var ret = [["Player", "pts", "mins", "fgm", "fga", "fg%", "3pa", "3pm", "3p%", "fta", "ftm", "ft%", "orb", "drb", "trb", "ast", "stl", "blk", "to", "pf"]];
+
+        function formatLine(name, stats) {
+            var arr = [ name ];
+            arr.push(stats[GameEvent.PTS]);
+            arr.push(stats[GameEvent.MINUTES]);
+            arr.push(stats[GameEvent.FGM2] + stats[GameEvent.FGM3]);
+            arr.push(stats[GameEvent.FGA2] + stats[GameEvent.FGA3]);
+            arr.pushcentage(stats[GameEvent.FGM2] + stats[GameEvent.FGM3]);
+            arr.push(stats[GameEvent.FGM3]);
+            arr.push(stats[GameEvent.FGA3]);
+            arr.pushcentage(stats[GameEvent.FGM3]);
+            arr.push(stats[GameEvent.FTM]);
+            arr.push(stats[GameEvent.FTA]);
+            arr.pushcentage(stats[GameEvent.FTM]);
+            arr.push(stats[GameEvent.ORB]);
+            arr.push(stats[GameEvent.DRB]);
+            arr.push(stats[GameEvent.ORB] + stats[GameEvent.DRB]);
+            arr.push(stats[GameEvent.AST]);
+            arr.push(stats[GameEvent.STL]);
+            arr.push(stats[GameEvent.BLK]);
+            arr.push(stats[GameEvent.TO]);
+            arr.push(stats[GameEvent.PF]);
+            return arr;
+        }
+        sorted.forEach(function(player) { ret.push(formatLine(player.name, that.players[player.id])); });
+        formatLine("Total", stats);
+        return ret;
+    }
+
+    return {
+        home: {
+            name: this.game.home.name,
+            rows: formatTeam(this.game.home, this.game.homePlayers, this.game.homeStats)
+        },
+        away: {
+            name: this.game.away.name,
+            rows: formatTeam(this.game.away, this.game.awayPlayers, this.game.awayStats)
+        }
+    };
+};
+
 BoxScore.prototype.print = function() {
     // console.log(this.players);
 
