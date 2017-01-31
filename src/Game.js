@@ -1,10 +1,10 @@
 /*global module, require */
 
-const League = require('./League.js');
-const Event = require('./Event.js');
-const Team = require('./Team.js');
-const Player = require('./Player.js');
-const Time = require('./Time.js');
+var League = require('./League.js');
+var GameEvent = require('./GameEvent.js');
+var Team = require('./Team.js');
+var Player = require('./Player.js');
+var Time = require('./Time.js');
 
 function Game(home, away)
 {
@@ -56,7 +56,8 @@ Game.prototype.decodeEvent = function(object) {
     } else {
         data = object.data;
     }
-    return new Event(object.type, new Time(object.time.value, object.time.end), object.team === this.home.id ? this.home : this.away, data);
+    console.log("gris", typeof GameEvent, Object.keys(GameEvent));
+    return new GameEvent(object.type, new Time(object.time.value, object.time.end), object.team === this.home.id ? this.home : this.away, data);
 };
 
 

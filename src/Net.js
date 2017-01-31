@@ -1,8 +1,8 @@
 /* global require, module */
 
-const safe = require('safetydance');
-const fs = require('fs');
-const request = require('request');
+var safe = require('safetydance');
+var fs = require('fs');
+var request = require('request');
 
 function Net(options)
 {

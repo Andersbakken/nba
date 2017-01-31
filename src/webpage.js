@@ -3,6 +3,7 @@
 var BoxScore = require('./BoxScore.js');
 var Game = require('./Game.js');
 var Player = require('./Player.js');
+var League = require('./League.js');
 
 function get(url, cb)
 {
@@ -32,6 +33,7 @@ function get(url, cb)
 var curDay;
 var currentDay, boxscore, games;
 var gamesList;
+var league = new League;
 
 window.selectGame = function(idx)
 {
@@ -40,6 +42,9 @@ window.selectGame = function(idx)
             alert(error);
             return;
         }
+        var game = Game.decode(result, league);
+        var box = new BoxScore(game);
+        document.getElementById('boxscore').innerHTML = '<pre>' + box.print() + '</pre>';
         // gamesList = result;
         // // console.log(games.innerHtml);
         // var idx = 0;

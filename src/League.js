@@ -1,9 +1,9 @@
 /* global module, require */
 
-const Conference = require('./Conference.js');
-const Division = require('./Division.js');
-const Player = require('./Player.js');
-const Team = require('./Team.js');
+var Conference = require('./Conference.js');
+var Division = require('./Division.js');
+var Player = require('./Player.js');
+var Team = require('./Team.js');
 
 function League()
 {

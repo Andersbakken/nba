@@ -1,5 +1,5 @@
 /*global module, require */
-const Player = require('./Player.js');
+var Player = require('./Player.js');
 
 var nextTeamId = 1024;
 function Team(name, abbrev)
