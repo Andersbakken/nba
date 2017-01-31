@@ -21,10 +21,10 @@ function Net(options)
     this.requests = {};
 }
 
-function Request(url, filename, cb) {
-    this.url = url;
+function Request(req, filename, cb) {
+    this.req = req;
     this.callbacks = [cb];
-    request(url, (error, response, body) => {
+    request(req.url, (error, response, body) => {
         if (error) {
             this.callbacks.forEach((callback) => {
                 callback(error);
@@ -40,10 +40,10 @@ function Request(url, filename, cb) {
             statusCode: response.statusCode
         };
 
-        if (response.statusCode == 200) {
+        if (response.statusCode == 200 && !req.nocache) {
             safe.fs.writeFileSync(filename, JSON.stringify(data));
         }
-        data.url = url;
+        data.url = req.url;
         data.source = "network";
         this.callbacks.forEach((callback) => {
             callback(undefined, data);
@@ -73,7 +73,7 @@ Net.prototype.get = function(req, cb) {
         return;
     }
 
-    this.requests[req.url] = new Request(req.url, fileName, cb);
+    this.requests[req.url] = new Request(req, fileName, cb);
 };
 
 Net.prototype.clearCache = function(url) {
