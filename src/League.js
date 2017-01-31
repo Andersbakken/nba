@@ -11,7 +11,7 @@ function League()
         "Eastern": new Conference("Eastern", [
             new Division("Atlantic", [
                 new Team("Boston Celtics", "BOS"),
-                new Team("Brooklyn Nets", "BRK"),
+                new Team("Brooklyn Nets", "BKN"),
                 new Team("New York Knicks", "NYK"),
                 new Team("Philadelphia 76ers", "PHI"),
                 new Team("Toronto Raptors", "TOR")

@@ -195,4 +195,26 @@ BoxScore.prototype.print = function() {
     formatTeam(this.game.home, this.homePlayers);
 };
 
+/*
+BoxScore.prototype.toHTML = function() {
+    var html = "";
+    var fields = [
+        for (var teamData in [ [ this.away, this.awayPlayers, this.away.Stats ] [ this.home, this.homePlayers, that.homeStats ] ]) {
+        var team = teamData[0];
+        var players = teamData[1];
+        html += '<div>' + team.name + '</div><br/>';
+        html += '<table width="100%">';
+        html += '<tr width="100%">';
+        html += '<td>
+
+    }
+    var html = ('<div>' + this.game.home.name + '</div>'
+                + '<table width="100%">'
+
+
+
+};
+
+ */
+
 module.exports = BoxScore;

@@ -63,6 +63,7 @@ app.get('/api/games/list/:date', gamesByDate, (req, res, next) => {
 });
 
 function findGame(req, res, next) {
+    console.log("requesting game", req.params.gameid);
     net.get(`http://stats.nba.com/stats/playbyplayv2?GameId=${req.params.gameid}&StartPeriod=1&EndPeriod=14`, function(err, data) {
         if (err) {
             next(new Error(err));
