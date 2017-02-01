@@ -1,9 +1,6 @@
 /* global require */
 
-var BoxScore = require('./BoxScore.js');
-var Game = require('./Game.js');
-var Player = require('./Player.js');
-var League = require('./League.js');
+var NBA = require('./NBA.js');
 
 function get(url, cb)
 {
@@ -33,7 +30,7 @@ function get(url, cb)
 var curDay;
 var currentDay, boxscore, games;
 var gamesList;
-var league = new League;
+var league = new NBA.League;
 
 window.selectGame = function(idx)
 {
@@ -42,9 +39,10 @@ window.selectGame = function(idx)
             alert(error);
             return;
         }
-        var game = Game.decode(result, league);
-        var box = new BoxScore(game);
-        document.getElementById('boxscore').innerHTML = '<pre>' + box.print() + '</pre>';
+        console.log(result);
+        var game = NBA.Game.decode(result, league);
+        var box = new NBA.BoxScore(game);
+        // document.getElementById('boxscore').innerHTML = '<pre>' + box.print() + '</pre>';
         // gamesList = result;
         // // console.log(games.innerHtml);
         // var idx = 0;
@@ -57,7 +55,7 @@ window.selectGame = function(idx)
         console.log("GOT GAME", result);
     });
     // console.log("selectGame(" + idx + ")");
-}
+};
 
 window.selectDay = function(day)
 {
@@ -79,19 +77,19 @@ window.selectDay = function(day)
         document.getElementById("games").innerHTML = html;
         // console.log(error, result);
     });
-}
+};
 
 window.nextDay = function()
 {
     console.log("nextDay");
     selectDay(addDays(curDay, 1));
-}
+};
 
 window.prevDay = function()
 {
     console.log("prevDay");
     selectDay(addDays(curDay, -1));
-}
+};
 
 function formatDate(date)
 {
@@ -110,7 +108,7 @@ window.onload = function() {
     boxscore = document.getElementById("boxscore");
     games = document.getElementById("games");
     var today = new Date();
-    selectDay(today);
+    window.selectDay(today);
     // console.log("inited");
     // get("/api/years", (error, response) => {
     //     if (error) {

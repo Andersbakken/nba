@@ -14,13 +14,18 @@ const parseGame = require('./GameParser.js');
 
 const lowerBound = function(haystack, needle, comparator) {
     var idx = bsearch(haystack, needle, comparator);
-    if (idx < 0)
-        return -idx;
-    while (idx > 0 && !comparator(haystack[idx - 1], needle))
-        --idx;
+    if (idx < 0) {
+        idx = -idx;
+        while (idx > 0 && comparator(haystack[idx - 1], needle) > 0)
+            --idx;
+    } else {
+        while (idx > 0 && !comparator(haystack[idx - 1], needle))
+            --idx;
+    }
     return idx;
 };
 var schedule;
+var gamesById = {};
 
 var league = new NBA.League;
 
@@ -62,7 +67,8 @@ app.get('/api/games/list/:date', gamesByDate, (req, res, next) => {
 
 function findGame(req, res, next) {
     console.log("requesting game", req.params.gameid);
-    net.get(`http://stats.nba.com/stats/playbyplayv2?GameId=${req.params.gameid}&StartPeriod=1&EndPeriod=14`, function(err, data) {
+    var url = `http://stats.nba.com/stats/playbyplayv2?GameId=${req.params.gameid}&StartPeriod=1&EndPeriod=14`;
+    net.get(url, function(err, data) {
         if (err) {
             next(new Error(err));
             return;
@@ -70,14 +76,21 @@ function findGame(req, res, next) {
         // console.log("GOT GAME", JSON.stringify(JSON.parse(data.body), undefined, 4));
         req.game = data.body;
         safe.fs.writeFileSync("/tmp/game.json", JSON.stringify(JSON.parse(data.body), undefined, 4));
-        parseGame(league, JSON.parse(data.body), function(error, game) {
-            if (error) {
-                next(new Error(error));
-            } else {
-                req.game = game;
-                next();
-            }
-        });
+        try {
+            parseGame(league, JSON.parse(data.body), function(error, game) {
+                if (error) {
+                    net.clearCache(url);
+                    next(new Error(error));
+                } else {
+                    req.game = game;
+                    // if (!req.game.events.length || req.game
+                    next();
+                }
+            });
+        } catch (err) {
+            net.clearCache(url);
+            next(new Error(err));
+        }
     });
 }
 
@@ -118,6 +131,7 @@ net.get('http://www.nba.com/data/10s/prod/v1/' + (NBA.currentSeasonYear() - 1) +
     schedule = parsed.league.standard;
     for (var idx=0; idx<schedule.length; ++idx) {
         schedule[idx].gameTime = new Date(schedule[idx].startTimeUTC);
+        gamesById[schedule[idx].gameId] = schedule[idx];
     }
     // console.log(JSON.stringify(schedule[0], null, 4));
     // console.log("GOT RESPONSE", error, response);
