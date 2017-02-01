@@ -97,7 +97,7 @@ function findGame(req, res, next) {
 app.get('/api/games/:gameid', findGame, (req, res, next) => {
     if (req.game) {
         res.send(req.game.encode(league));
-        var box = new NBA.BoxScore(req.game, new NBA.Time(1451000));
+        var box = new NBA.BoxScore(req.game);
         box.print();
     } else {
         res.sendStatus(404);
