@@ -9,29 +9,23 @@
     <script src="bundle.js"></script>
     <title>NBA!</title>
   </head>
-  <body" width="100%">
-    <!-- <script src="webpage.js"></script> -->
-    <div id="days" width="100%">
-      <a href="#" onclick="prevDay()">Previous</a>
-      <div id="currentDay">
-      </div>
-      <a href="#" onclick="nextDay()">Next</a>
+  <body width="100%">
+    <table>
+      <tr>
+        <td><a href="javascript:prevDay()">Previous</a></td>
+        <td><div id="currentDay"></div></td>
+        <td><a href="javascript:nextDay()">Next</a></td>
+      </tr>
+    </table>
+    <div id="games"></div>
+    <div id="boxscore"></div>
+    <div id="sliderArea">
     </div>
-    <div id="games">
-      drit
-    </div>
-    <div id="boxscore">
-    </div>
-    <!-- <div id="slider"> -->
-    <!-- </div> -->
-    <!-- <div class="container" id="top"> -->
-      <!-- <div class="dropdown"> -->
-      <!--   <button id="year-button" class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Year -->
-      <!--     <span class="caret"></span> -->
-      <!--   </button> -->
-      <!--   <ul class="dropdown-menu" id="years-dropdown"> -->
-      <!--   </ul> -->
-      <!-- </div> -->
-    <!-- </div> -->
+    <table>
+      <tr>
+        <td width="75%"> <input type="range" id="timeSlider" min="0" max="1000" step="1" oninput="displayMaxTime(this.value)" onchange="changeMaxTime(this.value)"></input></td>
+        <td width="25%"> <div id="timeSliderLabel">label</div></td>
+      </tr>
+    </table>
   </body>
 </html>

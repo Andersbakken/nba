@@ -1,4 +1,4 @@
-/* global require */
+/* global require, setTimeout */
 
 var NBA = require('./NBA.js');
 
@@ -28,70 +28,111 @@ function get(url, cb)
 }
 
 var curDay;
-var currentDay, boxscore, games;
 var gamesList;
 var league = new NBA.League;
+var currentGame;
 
 window.selectGame = function(idx)
 {
-    get("/api/games/" + gamesList[idx].gameId, function(error, result) {
+    window.location.hash = "#day=" + NBA.formatDate(new Date(gamesList[idx].gameTime)) + "#game=" + gamesList[idx].gameId;
+};
+
+function renderBoxScore(maxTime)
+{
+    var box = new NBA.BoxScore(currentGame, maxTime);
+    // document.getElementById('boxscore').innerHTML = '<pre>' + box.print() + '</pre>';
+    // gamesList = result;
+    // // console.log(games.innerHtml);
+    // var idx = 0;
+    // var html = "";
+    // for (var i=0; i<gamesList.length; ++i) {
+    //     html += '<a href="#" onclick="selectGame(' + i + ')">' + gamesList[i].away + '@' + gamesList[i].home + ' ' + new Date(gamesList[i].gameTime.toLocaleString()) + '</a><br><br/>';
+    // }
+    // document.getElementById("games").innerHTML = html;
+    // console.log(error, result);
+    var html = "";
+    var headers;
+    box.visit(function(context, data) {
+        if (context == 'team') {
+            html += `<p><pre>${data.name}</pre></p>`;
+            return;
+        } else if (context == 'header') {
+            html += '<table><tr>';
+            data.forEach((h) => { html += `<th><pre>${h}</pre></th>`; });
+            headers = data;
+            html += '</tr>';
+        } else if (context == "teamEnd") {
+            html += "</table>";
+        } else if (context == 'player' || context == 'total') {
+            html += '<tr>';
+            var idx = 0;
+            data.forEach((d) => {
+                if (/%$/.exec(headers[idx++])) {
+                    if (!d) {
+                        d = "";
+                    } else if (d == 1) {
+                        d = "1.000";
+                    } else {
+                        d = "." + d.toFixed(3).substr(1).substr(1);
+                    }
+                }
+                html += `<td><pre>${d}</pre></td>`;
+            });
+            html += '</tr>';
+        }
+    });
+    document.getElementById("boxscore").innerHTML = html;
+}
+
+function displayGame(gameId)
+{
+    document.getElementById("boxscore").innerHTML = "Loading game...";
+    currentGame = undefined;
+    get("/api/games/" + gameId, function(error, result) {
         if (error) {
+            document.getElementById("boxscore").innerHTML = "Error... " + error;
             alert(error);
             return;
         }
         console.log(result);
-        var game = NBA.Game.decode(result, league);
-        var box = new NBA.BoxScore(game);
-        // document.getElementById('boxscore').innerHTML = '<pre>' + box.print() + '</pre>';
-        // gamesList = result;
-        // // console.log(games.innerHtml);
-        // var idx = 0;
-        // var html = "";
-        // for (var i=0; i<gamesList.length; ++i) {
-        //     html += '<a href="#" onclick="selectGame(' + i + ')">' + gamesList[i].away + '@' + gamesList[i].home + ' ' + new Date(gamesList[i].gameTime.toLocaleString()) + '</a><br><br/>';
-        // }
-        // document.getElementById("games").innerHTML = html;
-        // console.log(error, result);
-        var html = "";
-        var headers;
-        box.visit(function(context, data) {
-            if (context == 'team') {
-                html += `<p>${data.name}</p>`;
-                return;
-            } else if (context == 'header') {
-                html += '<table><tr>';
-                data.forEach((h) => { html += `<th>${h}</th>`; });
-                headers = data;
-                html += '</tr>';
-            } else if (context == 'player' || context == 'total') {
-                html += '<tr>';
-                var idx = 0;
-                data.forEach((d) => {
-                    if (/%$/.exec(headers[idx++])) {
-                        if (!d) {
-                            d = "";
-                        } else if (d == 1) {
-                            d = "1.000";
-                        } else {
-                            d = "." + d.toFixed(3).substr(1).substr(1);
-                        }
-                    }
-                    html += `<td>${d}</td>`;
-                });
-                html += '</tr>';
-            }
-        });
-        document.getElementById("boxscore").innerHTML = html;
-
+        currentGame = NBA.Game.decode(result, league);
+        document.getElementById("timeSlider").value = 0;
+        document.getElementById("timeSliderLabel").innerText = "00:00";
+        document.getElementById("timeSlider").style.display = 'block';
+        document.getElementById("timeSliderLabel").style.display = 'block';
+        renderBoxScore(new NBA.Time(0));
     });
-    // console.log("selectGame(" + idx + ")");
+}
+
+function gameTimeForValue(value)
+{
+    var length = parseInt(currentGame.length.value * (value / 1000));
+    return new NBA.Time(length);
+}
+window.changeMaxTime = function(value) {
+    renderBoxScore(gameTimeForValue(value));
+    // // document.getElementById("timeSliderLabel").innerText = gameTimeForValue(value).mmss();
+    // console.log("got value", value);
 };
 
-window.selectDay = function(day)
+window.displayMaxTime = function(value) {
+    document.getElementById("timeSliderLabel").innerText = gameTimeForValue(value).mmss();
+    // console.log("got display value", value);
+};
+
+window.selectDay = function(day, game)
 {
+    document.getElementById("timeSlider").style.display = 'none';
+    document.getElementById("timeSliderLabel").style.display = 'none';
+
     curDay = day;
-    var fmt = formatDate(day);
-    currentDay.innerText = fmt;
+    // console.log("selectDay", day);
+    document.getElementById("boxscore").innerHTML = "";
+    currentGame = undefined;
+    // window.location.hash = 'day=' + fmt;
+    var fmt = NBA.formatDate(curDay);
+    console.log(curDay, fmt);
+    document.getElementById("currentDay").innerText = fmt;
     get("/api/games/list/" + fmt, function(error, result) {
         if (error) {
             alert(error);
@@ -102,29 +143,71 @@ window.selectDay = function(day)
         var idx = 0;
         var html = "";
         for (var i=0; i<gamesList.length; ++i) {
-            html += '<a href="#" onclick="selectGame(' + i + ')">' + gamesList[i].away + '@' + gamesList[i].home + ' ' + new Date(gamesList[i].gameTime.toLocaleString()) + '</a><br><br/>';
+            html += '<a href="javascript:selectGame(' + i + ')">' + gamesList[i].away + '@' + gamesList[i].home + ' ' + new Date(gamesList[i].gameTime.toLocaleString()) + '</a><br><br/>';
         }
         document.getElementById("games").innerHTML = html;
+        if (game)
+            displayGame(game);
         // console.log(error, result);
     });
 };
 
+function handleUrl()
+{
+    console.log("got a url", window.location);
+    var day, game;
+    window.location.hash.split('#').filter(function(e) { return e.length != 0; }).forEach(function(item) {
+        var split = item.split('=');
+        if (split.length == 2) {
+            switch (split[0]) {
+            case 'day':
+                day = split[1];
+                break;
+            case 'game':
+                game = split[1];
+                break;
+            default:
+                console.error("unhandled hash", item);
+                break;
+            }
+        }
+    });
+    if (!day) {
+        window.location.hash = "#day=" + NBA.formatDate(new Date());
+        return;
+    }
+    var match = /(^[0-9][0-9][0-9][0-9])([0-9][0-9])([0-9][0-9])$/.exec(day);
+    if (!day) {
+        console.error("Invalid date", day);
+        window.location.hash = "#day=" + NBA.formatDate(new Date());
+        return;
+    }
+    // console.log("shitbitch", match, day);
+    var date = new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
+    if (!curDay || date.valueOf() != curDay.valueOf()) {
+        window.selectDay(date, game);
+        return;
+    }
+
+    if (game) {
+        displayGame(game);
+    }
+}
+
+window.onhashchange = handleUrl;
 window.nextDay = function()
 {
-    console.log("nextDay");
-    selectDay(addDays(curDay, 1));
+    var date = addDays(curDay, 1);
+    if (date.valueOf() > (new Date()).valueOf())
+        return;
+    window.location.hash = "#day=" + NBA.formatDate(date);
+
 };
 
 window.prevDay = function()
 {
-    console.log("prevDay");
-    selectDay(addDays(curDay, -1));
+    window.location.hash = "#day=" + NBA.formatDate(addDays(curDay, -1));
 };
-
-function formatDate(date)
-{
-    return "" + date.getFullYear() + date.getMonth() + 1 + date.getDate();
-}
 
 function addDays(date, days)
 {
@@ -134,21 +217,5 @@ function addDays(date, days)
 }
 
 window.onload = function() {
-    currentDay = document.getElementById("currentDay");
-    boxscore = document.getElementById("boxscore");
-    games = document.getElementById("games");
-    var today = new Date();
-    window.selectDay(today);
-    // console.log("inited");
-    // get("/api/years", (error, response) => {
-    //     if (error) {
-    //         alert(error);
-    //         return;
-    //     }
-    //     // var dropdown = $('#years-dropdown');
-    //     response.sort((l, r) => { return r - l; }).forEach((year) => {
-    //         var html = '<li><a href="#" onclick="selectYear(' + year +')">' + year + '</a></li>';
-    //         $('#years-dropdown').append(html);
-    //     });
-    // });
-}
+    handleUrl();
+};

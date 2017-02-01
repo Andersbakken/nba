@@ -6,6 +6,11 @@ function currentSeasonYear() { // returns 2017 in 2016-2017 season
     return date.getMonth() >= 9 ? date.getFullYear() + 1 : date.getFullYear();
 };
 
+function formatDate(date)
+{
+    return "" + date.getFullYear() + date.getMonth() + 1 + date.getDate();
+}
+
 // --- Time ---
 
 function Time(ms, end)
@@ -332,43 +337,46 @@ Game.decode = function(object, league) {
     ret.events = object.events.map((event) => { return ret.decodeEvent(event); });
     return ret;
 };
+Game.prototype = {
+    get length() {
+        return this.events.length ? this.events[this.events.length - 1].time : undefined;
+    },
+    encode: function(league) {
+        var ret = {
+            home: league.encodeTeam(this.home),
+            away: league.encodeTeam(this.away),
+            events: this.events.map((event) => { return this.encodeEvent(event); })
+        };
+        return ret;
+    },
 
-Game.prototype.encode = function(league) {
-    var ret = {
-        home: league.encodeTeam(this.home),
-        away: league.encodeTeam(this.away),
-        events: this.events.map((event) => { return this.encodeEvent(event); })
-    };
-    return ret;
-};
-
-Game.prototype.encodeEvent = function(event) {
-    var ret = {
-        type: event.type,
-        time: { value: event.time.value, end: event.time.end },
-        team: event.team ? event.team.id : undefined
-    };
-    if (event.data instanceof Team) {
-        ret.data = { team: event.data.id };
-    } else if (event.data instanceof Player) {
-        ret.data = { player: event.data.id };
-    } else {
-        ret.data = event.data;
-    }
-    return ret;
-};
-
-Game.prototype.decodeEvent = function(object) {
-    var data;
-    var team = object.team === this.home.id ? this.home : this.away;
-    if (object.data instanceof Object) {
-        if (object.data.player) {
-            data = team.players[object.data.player];
+    encodeEvent: function(event) {
+        var ret = {
+            type: event.type,
+            time: { value: event.time.value, end: event.time.end },
+            team: event.team ? event.team.id : undefined
+        };
+        if (event.data instanceof Team) {
+            ret.data = { team: event.data.id };
+        } else if (event.data instanceof Player) {
+            ret.data = { player: event.data.id };
+        } else {
+            ret.data = event.data;
         }
-    } else {
-        data = object.data;
+        return ret;
+    },
+    decodeEvent: function(object) {
+        var data;
+        var team = object.team === this.home.id ? this.home : this.away;
+        if (object.data instanceof Object) {
+            if (object.data.player) {
+                data = team.players[object.data.player];
+            }
+        } else {
+            data = object.data;
+        }
+        return new Event(object.type, new Time(object.time.value, object.time.end), team, data);
     }
-    return new Event(object.type, new Time(object.time.value, object.time.end), team, data);
 };
 
 // --- BoxScore ---
@@ -402,11 +410,11 @@ function BoxScore(game, maxTime)
     var quarter = undefined;
     var homeSubs = [];
     var awaySubs = [];
+    var expired = false;
     for (var i=0; i<game.events.length; ++i) {
         var ev = game.events[i];
-        if (maxTime && ev.time.value > maxTime.value) {
-            break;
-        }
+        if (!expired && maxTime && ev.time.value > maxTime.value)
+            expired = true;
         if (ev.type == Event.QUARTER_START) {
             quarter = ev.data;
             homeLineup = {};
@@ -445,9 +453,11 @@ function BoxScore(game, maxTime)
             subs.push({ type: Event.SUBBED_OUT, time: ev.time, player: ev.data.id, name: ev.data.name, foo: "out1" });
             break;
         }
-        var teamStats = home ? this.homeStats : this.awayStats;
-        ++teamStats[ev.type];
-        teamStats[Event.PTS] += pts;
+        if (!expired) {
+            var teamStats = home ? this.homeStats : this.awayStats;
+            ++teamStats[ev.type];
+            teamStats[Event.PTS] += pts;
+        }
         if (ev.data instanceof Player) {
             if (!lineup[ev.data.id] && ev.type != Event.SUBBED_OUT && ev.type != Event.SUBBED_IN) {
                 lineup[ev.data.id] = true;
@@ -455,8 +465,10 @@ function BoxScore(game, maxTime)
                     this.players[ev.data.id][Event.STARTED] = true;
                 subs.push({ type: Event.SUBBED_IN, time: Time.quarterStart(quarter), player: ev.data.id, name: ev.data.name, foo: "in3" });
             }
-            ++this.players[ev.data.id][ev.type];
-            this.players[ev.data.id][Event.PTS] += pts;
+            if (!expired) {
+                ++this.players[ev.data.id][ev.type];
+                this.players[ev.data.id][Event.PTS] += pts;
+            }
         }
     }
     var that = this;
@@ -475,7 +487,17 @@ function BoxScore(game, maxTime)
                 //     console.error(`Somehow ${sub.name} isn't on the court`);
                 //     return;
                 // }
-                var duration = sub.time.value - map[sub.player].value;
+                if (!map[sub.player]) {
+                    console.log(`expected ${sub.player} to be on the court but he aint`);
+                    console.log(Object.keys(map));
+                }
+                var start = map[sub.player].value;
+                var end = sub.time.value;
+                if (maxTime) {
+                    start = Math.min(start, maxTime.value);
+                    end = Math.min(end, maxTime.value);
+                }
+                var duration = end - start;
                 delete map[sub.player];
                 if (!ms[sub.player]) {
                     ms[sub.player] = duration;
@@ -539,6 +561,7 @@ BoxScore.prototype.visit = function(cb) {
         }
         sorted.forEach(function(player) { formatLine(player.name, that.players[player.id], "player"); });
         formatLine("Total", stats, "total");
+        cb("teamEnd");
     }
     formatTeam(this.game.away, this.awayPlayers, this.awayStats);
     formatTeam(this.game.home, this.homePlayers, this.homeStats);
@@ -616,27 +639,9 @@ BoxScore.prototype.print = function() {
     formatTeam(this.game.home, this.homePlayers);
 };
 
-/*
- BoxScore.prototype.toHTML = function() {
- var html = "";
- var fields = [
- for (var teamData in [ [ this.away, this.awayPlayers, this.away.Stats ] [ this.home, this.homePlayers, that.homeStats ] ]) {
- var team = teamData[0];
- var players = teamData[1];
- html += '<div>' + team.name + '</div><br/>';
- html += '<table width="100%">';
- html += '<tr width="100%">';
- html += '<td>
-
- }
- var html = ('<div>' + this.game.home.name + '</div>'
- + '<table width="100%">'
- };
-
- */
-
 module.exports = {
     currentSeasonYear: currentSeasonYear,
+    formatDate: formatDate,
     Time: Time,
     Player: Player,
     Team: Team,
