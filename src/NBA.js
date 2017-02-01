@@ -10,14 +10,14 @@ function currentSeasonYear() { // returns 2017 in 2016-2017 season
 
 function Time(ms, end)
 {
-    this.time = new Date(ms);
+    this.date = new Date(ms);
     this.end = end || false;
 }
 Time.prototype = {
-    get milliseconds() { return this.time.getMilliseconds(); },
-    get value() { return this.time.valueOf(); },
-    get minutes() { return this.time.getMinutes(); },
-    get seconds() { return this.time.getSeconds(); },
+    get milliseconds() { return this.date.getMilliseconds(); },
+    get value() { return this.date.valueOf(); },
+    get minutes() { return this.date.getMinutes(); },
+    get seconds() { return this.date.getSeconds(); },
     get quarter() {
         var ret;
         var value = this.value;
@@ -33,7 +33,7 @@ Time.prototype = {
         return ret;
     },
     add: function(ms) {
-        this.time = new Date(this.value + ms);
+        this.date = new Date(this.value + ms);
         this.end = false;
     },
     compare: function(other) {
@@ -87,21 +87,20 @@ Player.prototype.encode = function() {
 };
 
 Player.decode = function(data) {
-    return new Player(data.name, data.link);
+    return new Player(data.name, data.id);
 };
 
 // --- Team ---
 
-var nextTeamId = 1024;
-function Team(name, abbrev)
+function Team(name, abbrev, id)
 {
     this.name = name;
     this.abbrev = abbrev;
     this.division = undefined;
-    this.id = ++nextTeamId;
     this.conference = undefined;
+    this.id = id;
     var date = new Date();
-    var year = date.getMonth() >= 9 ? date.getYear() + 1 : date.getYear();
+    var year = date.getMonth() >= 9 ? (date.getYear() + 1) : date.getYear();
     this.link = `http://www.basketball-reference.com/teams/${abbrev}/${year}.html`;
     this.players = {};
 }
@@ -175,51 +174,52 @@ Conference.prototype.team = function(name) {
 
 function League()
 {
+    var teamId = 0;
     this.conferences = {
         "Eastern": new Conference("Eastern", [
             new Division("Atlantic", [
-                new Team("Boston Celtics", "BOS"),
-                new Team("Brooklyn Nets", "BKN"),
-                new Team("New York Knicks", "NYK"),
-                new Team("Philadelphia 76ers", "PHI"),
-                new Team("Toronto Raptors", "TOR")
+                new Team("Boston Celtics", "BOS", ++teamId),
+                new Team("Brooklyn Nets", "BKN", ++teamId),
+                new Team("New York Knicks", "NYK", ++teamId),
+                new Team("Philadelphia 76ers", "PHI", ++teamId),
+                new Team("Toronto Raptors", "TOR", ++teamId)
             ]),
             new Division("Central", [
-                new Team("Chicago Bulls", "CHI"),
-                new Team("Cleveland Cavaliers", "CLE"),
-                new Team("Detroit Pistons", "DET"),
-                new Team("Indiana Pacers", "IND"),
-                new Team("Milwaukee Bucks", "MIL")
+                new Team("Chicago Bulls", "CHI", ++teamId),
+                new Team("Cleveland Cavaliers", "CLE", ++teamId),
+                new Team("Detroit Pistons", "DET", ++teamId),
+                new Team("Indiana Pacers", "IND", ++teamId),
+                new Team("Milwaukee Bucks", "MIL", ++teamId)
             ]),
             new Division("Southeast", [
-                new Team("Atlanta Hawks", "ATL"),
-                new Team("Charlotte Hornets", "CHA"),
-                new Team("Miami Heat", "MIA"),
-                new Team("Orlando Magic", "ORL"),
-                new Team("Washington Wizards", "WAS")
+                new Team("Atlanta Hawks", "ATL", ++teamId),
+                new Team("Charlotte Hornets", "CHA", ++teamId),
+                new Team("Miami Heat", "MIA", ++teamId),
+                new Team("Orlando Magic", "ORL", ++teamId),
+                new Team("Washington Wizards", "WAS", ++teamId)
             ]),
         ]),
         "Western": new Conference("Western", [
             new Division("Northwest", [
-                new Team("Denver Nuggets", "DEV"),
-                new Team("Minnesota Timberwolves", "MIN"),
-                new Team("Oklahoma City Thunder", "OKC"),
-                new Team("Portland Trail Blazers", "POR"),
-                new Team("Utah Jazz", "UTA")
+                new Team("Denver Nuggets", "DEV", ++teamId),
+                new Team("Minnesota Timberwolves", "MIN", ++teamId),
+                new Team("Oklahoma City Thunder", "OKC", ++teamId),
+                new Team("Portland Trail Blazers", "POR", ++teamId),
+                new Team("Utah Jazz", "UTA", ++teamId)
             ]),
             new Division("Pacific", [
-                new Team("Golden State Warriors", "GSW"),
-                new Team("Los Angeles Clippers", "LAC"),
-                new Team("Los Angeles Lakers", "LAL"),
-                new Team("Phoenix Suns", "PHO"),
-                new Team("Sacramento Kings", "SAC")
+                new Team("Golden State Warriors", "GSW", ++teamId),
+                new Team("Los Angeles Clippers", "LAC", ++teamId),
+                new Team("Los Angeles Lakers", "LAL", ++teamId),
+                new Team("Phoenix Suns", "PHO", ++teamId),
+                new Team("Sacramento Kings", "SAC", ++teamId)
             ]),
             new Division("Southwest", [
-                new Team("Dallas Mavericks", "DAL"),
-                new Team("Houston Rockets", "HOU"),
-                new Team("Memphis Grizzlies", "MEM"),
-                new Team("New Orleans Pelicans", "NOP"),
-                new Team("San Antonio Spurs", "SAS")
+                new Team("Dallas Mavericks", "DAL", ++teamId),
+                new Team("Houston Rockets", "HOU", ++teamId),
+                new Team("Memphis Grizzlies", "MEM", ++teamId),
+                new Team("New Orleans Pelicans", "NOP", ++teamId),
+                new Team("San Antonio Spurs", "SAS", ++teamId)
             ])
         ])
     };
@@ -360,17 +360,15 @@ Game.prototype.encodeEvent = function(event) {
 
 Game.prototype.decodeEvent = function(object) {
     var data;
+    var team = object.team === this.home.id ? this.home : this.away;
     if (object.data instanceof Object) {
-        if (object.data.team) {
-            data = this.home.id === object.data.team ? this.home : this.away;
-        } else {
-            data = this.players[object.data.player];
+        if (object.data.player) {
+            data = team.players[object.data.player];
         }
     } else {
         data = object.data;
     }
-    console.log("gris", typeof Event, Object.keys(Event));
-    return new Event(object.type, new Time(object.time.value, object.time.end), object.team === this.home.id ? this.home : this.away, data);
+    return new Event(object.type, new Time(object.time.value, object.time.end), team, data);
 };
 
 // --- BoxScore ---
@@ -462,7 +460,7 @@ function BoxScore(game, maxTime)
         }
     }
     var that = this;
-    function processSubs(subs) {
+    function processSubs(subs, teamStats) {
         var map = {};
         var ms = {};
 
@@ -486,15 +484,20 @@ function BoxScore(game, maxTime)
                 }
             }
         });
+        var total = new Time(0);
         for (var id in ms) {
+            total.add(ms[id]);
             that.players[id][Event.MINUTES] = (new Time(ms[id])).mmss();
         }
+        // ### something about this is not working at all. No idea why.
+        // console.log("shit", total.mmss(), teamStats, total.date.valueOf());
+        teamStats[Event.MINUTES] = total.mmss();
     }
-    processSubs(homeSubs);
-    processSubs(awaySubs);
+    processSubs(homeSubs, this.homeStats);
+    processSubs(awaySubs, this.awayStats);
 };
 
-BoxScore.prototype.encode = function() {
+BoxScore.prototype.visit = function(cb) {
     var that = this;
     function formatTeam(team, players, stats) {
         var sorted = players.sort(function(l, r) {
@@ -504,21 +507,26 @@ BoxScore.prototype.encode = function() {
                 return ll[Event.STARTED] ? -1 : 1;
             return rr[Event.PTS] - ll[Event.PTS];
         });
-        var ret = [["Player", "pts", "mins", "fgm", "fga", "fg%", "3pa", "3pm", "3p%", "fta", "ftm", "ft%", "orb", "drb", "trb", "ast", "stl", "blk", "to", "pf"]];
+        cb("team", team);
+        cb("header", ["Player", "pts", "mins", "fgm", "fga", "fg%", "3pa", "3pm", "3p%", "fta", "ftm", "ft%", "orb", "drb", "trb", "ast", "stl", "blk", "to", "pf"]);
 
-        function formatLine(name, stats) {
+        function percentage(m, a) {
+            return a ? m / a : 0;
+        }
+
+        function formatLine(name, stats, context) {
             var arr = [ name ];
             arr.push(stats[Event.PTS]);
             arr.push(stats[Event.MINUTES]);
             arr.push(stats[Event.FGM2] + stats[Event.FGM3]);
             arr.push(stats[Event.FGA2] + stats[Event.FGA3]);
-            arr.pushcentage(stats[Event.FGM2] + stats[Event.FGM3]);
+            arr.push(percentage(stats[Event.FGM2] + stats[Event.FGM3], stats[Event.FGA2] + stats[Event.FGA3]));
             arr.push(stats[Event.FGM3]);
             arr.push(stats[Event.FGA3]);
-            arr.pushcentage(stats[Event.FGM3]);
+            arr.push(percentage(stats[Event.FGM3], stats[Event.FGA3]));
             arr.push(stats[Event.FTM]);
             arr.push(stats[Event.FTA]);
-            arr.pushcentage(stats[Event.FTM]);
+            arr.push(percentage(stats[Event.FTM], stats[Event.FTA]));
             arr.push(stats[Event.ORB]);
             arr.push(stats[Event.DRB]);
             arr.push(stats[Event.ORB] + stats[Event.DRB]);
@@ -527,23 +535,13 @@ BoxScore.prototype.encode = function() {
             arr.push(stats[Event.BLK]);
             arr.push(stats[Event.TO]);
             arr.push(stats[Event.PF]);
-            return arr;
+            cb(context, arr);
         }
-        sorted.forEach(function(player) { ret.push(formatLine(player.name, that.players[player.id])); });
-        formatLine("Total", stats);
-        return ret;
+        sorted.forEach(function(player) { formatLine(player.name, that.players[player.id], "player"); });
+        formatLine("Total", stats, "total");
     }
-
-    return {
-        home: {
-            name: this.game.home.name,
-            rows: formatTeam(this.game.home, this.game.homePlayers, this.game.homeStats)
-        },
-        away: {
-            name: this.game.away.name,
-            rows: formatTeam(this.game.away, this.game.awayPlayers, this.game.awayStats)
-        }
-    };
+    formatTeam(this.game.away, this.awayPlayers, this.awayStats);
+    formatTeam(this.game.home, this.homePlayers, this.homeStats);
 };
 
 BoxScore.prototype.print = function() {

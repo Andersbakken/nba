@@ -52,7 +52,37 @@ window.selectGame = function(idx)
         // }
         // document.getElementById("games").innerHTML = html;
         // console.log(error, result);
-        console.log("GOT GAME", result);
+        var html = "";
+        var headers;
+        box.visit(function(context, data) {
+            if (context == 'team') {
+                html += `<p>${data.name}</p>`;
+                return;
+            } else if (context == 'header') {
+                html += '<table><tr>';
+                data.forEach((h) => { html += `<th>${h}</th>`; });
+                headers = data;
+                html += '</tr>';
+            } else if (context == 'player' || context == 'total') {
+                html += '<tr>';
+                var idx = 0;
+                data.forEach((d) => {
+                    if (/%$/.exec(headers[idx++])) {
+                        if (!d) {
+                            d = "";
+                        } else if (d == 1) {
+                            d = "1.000";
+                        } else {
+                            d = "." + d.toFixed(3).substr(1).substr(1);
+                        }
+                    }
+                    html += `<td>${d}</td>`;
+                });
+                html += '</tr>';
+            }
+        });
+        document.getElementById("boxscore").innerHTML = html;
+
     });
     // console.log("selectGame(" + idx + ")");
 };
