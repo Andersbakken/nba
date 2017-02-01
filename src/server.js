@@ -144,22 +144,3 @@ net.get('http://www.nba.com/data/10s/prod/v1/' + (NBA.currentSeasonYear() - 1) +
     });
     // console.log(gamesByDate(new Date()));
 });
-
-// console.log(Date.parse('2017-01-09T02:00:00.000Z'));
-// var d = new Date('2017-01-09T02:00:00.000Z');
-// console.log("typeof", typeof d);
-// console.log(d instanceof Date);
-// process.exit(1);
-
-// argv._.forEach((arg) => {
-//     var game = parse(arg);
-//     var box = new BoxScore(game, argv["max-time"] || argv.m);
-//     // box.print();
-//     // console.log(JSON.stringify(game.encode(league), null, 4));
-// });
-
-
-// ### TODO
-// Make sure cache doesn't grow too large? maybe not
-// Use https
-// need to deal with ongoing games, revalidate caches (304, if-modified-since etc)
