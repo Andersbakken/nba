@@ -201,7 +201,7 @@ function League()
         ]),
         "Western": new Conference("Western", [
             new Division("Northwest", [
-                new Team("Denver Nuggets", "DEV", ++teamId),
+                new Team("Denver Nuggets", "DEN", ++teamId),
                 new Team("Minnesota Timberwolves", "MIN", ++teamId),
                 new Team("Oklahoma City Thunder", "OKC", ++teamId),
                 new Team("Portland Trail Blazers", "POR", ++teamId),
