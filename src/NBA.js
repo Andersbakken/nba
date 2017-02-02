@@ -1,5 +1,7 @@
 /* global require, module */
 
+var leftPad = require('left-pad');
+
 // --- misc ---
 function currentSeasonYear() { // returns 2017 in 2016-2017 season
     var date = new Date;
@@ -8,7 +10,11 @@ function currentSeasonYear() { // returns 2017 in 2016-2017 season
 
 function formatDate(date)
 {
-    return "" + date.getFullYear() + date.getMonth() + 1 + date.getDate();
+    var ret = "";
+    ret += date.getFullYear();
+    ret += leftPad((date.getMonth() + 1), 2, '0');
+    ret += leftPad(date.getDate(), 2, '0');
+    return ret;
 }
 
 // --- Time ---
