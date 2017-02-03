@@ -57,7 +57,7 @@ function gamesByDate(req, res, next) {
     next();
 }
 
-app.get('/api/games/list/:date', gamesByDate, (req, res, next) => {
+app.get('/api/games/:date', gamesByDate, (req, res, next) => {
     if (req.games) {
         res.send(JSON.stringify(req.games));
     } else {
@@ -66,7 +66,7 @@ app.get('/api/games/list/:date', gamesByDate, (req, res, next) => {
 });
 
 function findGame(req, res, next) {
-    console.log("requesting game", req.params.gameid);
+    console.log("requesting game", req.params.date, req.params.gameid);
     var url = `http://stats.nba.com/stats/playbyplayv2?GameId=${req.params.gameid}&StartPeriod=1&EndPeriod=14`;
     net.get(url, function(err, data) {
         if (err) {
@@ -94,7 +94,7 @@ function findGame(req, res, next) {
     });
 }
 
-app.get('/api/games/:gameid', findGame, (req, res, next) => {
+app.get('/api/games/:date/:gameid', findGame, (req, res, next) => {
     if (req.game) {
         res.send(req.game.encode(league));
         var box = new NBA.BoxScore(req.game);

@@ -86,9 +86,10 @@ function renderBoxScore(maxTime)
 
 function displayGame(gameId)
 {
+    var fmt = NBA.formatDate(curDay);
     document.getElementById("boxscore").innerHTML = "Loading game...";
     currentGame = undefined;
-    get("/api/games/" + gameId, function(error, result) {
+    get(`/api/games/${fmt}/${gameId}`, function(error, result) {
         if (error) {
             document.getElementById("boxscore").innerHTML = "Error... " + error;
             alert(error);
@@ -133,7 +134,7 @@ window.selectDay = function(day, game)
     var fmt = NBA.formatDate(curDay);
     console.log(curDay, fmt);
     document.getElementById("currentDay").innerText = fmt;
-    get("/api/games/list/" + fmt, function(error, result) {
+    get("/api/games/" + fmt, function(error, result) {
         if (error) {
             alert(error);
             return;
