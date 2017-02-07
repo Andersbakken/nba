@@ -136,8 +136,6 @@ function findGame(req, res, next) {
 app.get('/api/games/:date/:gameid', findGame, (req, res, next) => {
     if (req.game) {
         res.send(req.game.encode(league));
-        var box = new NBA.BoxScore(req.game);
-        box.print();
     } else {
         res.sendStatus(404);
     }
@@ -182,7 +180,13 @@ net.get('http://www.nba.com/data/10s/prod/v1/' + (NBA.currentSeasonYear() - 1) +
         console.log("Listening on port", (argv.port || argv.p || 8899));
     });
     net.get({url: "http://localhost:8899/api/games/20170202/0021600745", nocache: true }, function(err, response) {
-        console.log(err, response);
+        if (err || response.statusCode != 200) {
+            console.log("BAD", response.statusCode, err);
+        } else {
+            var game = NBA.Game.decode(JSON.parse(response.body), league);
+            var box = new NBA.BoxScore(game);
+            box.print();
+        }
         process.exit();
     });
     // console.log(gamesByDate(new Date()));

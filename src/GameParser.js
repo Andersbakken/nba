@@ -422,6 +422,7 @@ function parseQuarters(league, net, data, cb) {
                     var ret;
                     if (matched) {
                         ret = new NBA.Player(matched[playerDataIndexes.PLAYER], matched[playerDataIndexes.PLAYER_ID]);
+                        (homePlayer ? home : away).players[ret.id] = ret;
                         players[ret.name] = ret;
                         players[ret.id] = ret;
                         players[playerIdOrName] = ret;
@@ -433,15 +434,30 @@ function parseQuarters(league, net, data, cb) {
 
                 function assist()
                 {
-                    // var player = addPlayer(2);
-                    // if (player)
-                    //     game.events.push(new NBA.Event(NBA.Event.AST, time, homeEvent ? home : away, player));
+                    var ast = /Assist: (.*) \([0-9]+ AST\)/.exec(description);
+                    if (ast) {
+                        var player = addPlayer(ast[1]);
+                        if (player)
+                            game.events.push(new NBA.Event(NBA.Event.AST, time, homeEvent ? home : away, player));
+                    }
                 }
+                function block()
+                {
+                    var blk = /Block: (.*) \([0-9]+ BLK\)/.exec(description);
+                    if (blk) {
+                        var player = addPlayer(blk[1], !homeEvent);
+                        if (player)
+                            game.events.push(new NBA.Event(NBA.Event.BLK, time, homeEvent ? away : home, player));
+                    }
+                }
+
                 function madeShot(attempt, make)
                 {
-                    // var shooter = addPlayer(play.personId);
-                    // game.events.push(new NBA.Event(attempt , time, homeEvent ? home : away, shooter));
-                    // game.events.push(new NBA.Event(make, time, homeEvent ? home : away, shooter));
+                    assert(attempt in NBA.Event.eventNames, "attempt is bad: " + attempt);
+                    assert(make in NBA.Event.eventNames, "make is bad: " + attempt);
+                    var shooter = addPlayer(play.personId);
+                    game.events.push(new NBA.Event(attempt , time, homeEvent ? home : away, shooter));
+                    game.events.push(new NBA.Event(make, time, homeEvent ? home : away, shooter));
                 }
 
                 // ### need to handle team turnover
@@ -485,15 +501,17 @@ function parseQuarters(league, net, data, cb) {
                     return;
                 }
 
-                if (/3pt Shot: Missed$/.exec(description)) {
+                if (/3pt Shot: Missed/.exec(description)) {
                     lastTeamMiss = (homeEvent ? home : away).id;
-                    game.events.push(new NBA.Event(NBA.Event.FG3A, time, homeEvent ? home : away, addPlayer(play.personId)));
+                    block();
+                    game.events.push(new NBA.Event(NBA.Event.FGA3, time, homeEvent ? home : away, addPlayer(play.personId)));
                     return;
                 }
 
-                if (/: Missed$/.exec(description)) {
+                if (/: Missed/.exec(description)) {
                     lastTeamMiss = (homeEvent ? home : away).id;
-                    game.events.push(new NBA.Event(NBA.Event.FGA, time, homeEvent ? home : away, addPlayer(play.personId)));
+                    block();
+                    game.events.push(new NBA.Event(NBA.Event.FGA2, time, homeEvent ? home : away, addPlayer(play.personId)));
                     return;
                 }
 
@@ -517,6 +535,10 @@ function parseQuarters(league, net, data, cb) {
                     return;
                 }
 
+                if (/Defense 3 Second/.exec(description)) { // nothing to do, could count them somewhere
+                    return;
+                }
+
                 if (/ Foul: /.exec(description)) {
                     game.events.push(new NBA.Event(NBA.Event.PF, time, homeEvent ? home : away, addPlayer(play.personId)));
                     return;
@@ -531,19 +553,7 @@ function parseQuarters(league, net, data, cb) {
                     return;
                 }
 
-                if (/^MISS .* 3PT /.exec(description)) {
-                    lastTeamMiss = (homeEvent ? home : away).id;
-                    game.events.push(new NBA.Event(NBA.Event.FGA3, time, homeEvent ? home : away, addPlayer(play.personId)));
-                    return;
-                }
-
-                if (/^MISS /.exec(description)) {
-                    lastTeamMiss = (homeEvent ? home : away).id;
-                    game.events.push(new NBA.Event(NBA.Event.FGA2, time, homeEvent ? home : away, addPlayer(play.personId)));
-                    return;
-                }
-
-                if (/ 3PT .* \([0-9]+ PTS\)/.exec(description)) {
+                if (/ 3pt Shot: Made/.exec(description)) {
                     assist();
                     madeShot(NBA.Event.FGA3, NBA.Event.FGM3);
                     return;
@@ -552,12 +562,6 @@ function parseQuarters(league, net, data, cb) {
                 if (/\([0-9]+ PTS\)/.exec(description)) {
                     assist();
                     madeShot(NBA.Event.FGA2, NBA.Event.FGM2);
-                    return;
-                }
-
-                if (/\([0-9]+ BLK\)/.exec(description)) {
-                    // ### not done
-                    // game.events.push(new NBA.Event(NBA.Event.BLK, time, homeEvent ? home : away, addPlayer(3)));
                     return;
                 }
 
@@ -572,9 +576,9 @@ function parseQuarters(league, net, data, cb) {
             game.events.push(new NBA.Event(NBA.Event.QUARTER_END, NBA.Time.quarterEnd(quarter), undefined, quarter));
             ++quarter;
         }
-        for (var i=0; i<game.events.length; ++i) {
-            console.log(game.events[i].toString());
-        }
+        // for (var i=0; i<game.events.length; ++i) {
+        //     console.log(game.events[i].type, game.events[i].toString());
+        // }
         cb(undefined, game);
     }
 }
