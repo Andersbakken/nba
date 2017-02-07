@@ -280,11 +280,7 @@ function parseQuarters(league, net, data, cb) {
                     return;
                 }
 
-                if (description.indexOf('lagrant') != -1) {
-                    console.log("UNHANDLED FLAGRANT", description);
-                    assert(false);
-                }
-                match = /Flagrant Foul: ([12]) /.exec(description);
+                match = /Foul: Flagrant Type ([12]) /.exec(description);
                 if (match) {
                     game.events.push(new NBA.Event(match[1] == '1' ? NBA.Event.FF1 : NBA.Event.FF2, time, homeEvent ? home : away, addPlayer(play.personId)));
                     return;
