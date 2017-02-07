@@ -320,9 +320,9 @@ Event.PLUSMINUS = 22;
 // team
 Event.TIMEOUT = 23;
 Event.TIMEOUT_20S = 24;
-Event.QUARTER_START = 25;
-Event.QUARTER_END = 26;
-Event.numEvents = Event.QUARTER_END + 1;
+Event.QUARTER_END = 25;
+Event.QUARTER_START = 26;
+Event.numEvents = Event.QUARTER_START + 1;
 Event.eventNames = (function() {
     var ret = {};
     Object.keys(Event).forEach(function(key) {

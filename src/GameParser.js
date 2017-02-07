@@ -358,7 +358,7 @@ function parseQuarters(league, net, data, cb) {
                 var timeLeft = play.clock.split(':');
                 time.add(-(parseInt(timeLeft[0]) * 60 * 1000));
                 time.add(-(parseInt(timeLeft[1]) * 1000));
-                console.log(match[1], time.mmss(), description);
+                // console.log(match[1], time.mmss(), description);
                 var homeEvent = match[1] == home.abbrev;
                 assert(homeEvent || match[1] == away.abbrev);
                 function forEachPlayer(homeTeam, cb) {
@@ -573,11 +573,104 @@ function parseQuarters(league, net, data, cb) {
 
                 console.log("unhandled event", description);
             });
-            game.events.push(new NBA.Event(NBA.Event.QUARTER_END, NBA.Time.quarterEnd(quarter), undefined, quarter));
+            game.events.push(new NBA.Event(NBA.Event.QUARTER_END, NBA.Time.quarterEnd(quarter), undefined, quarter)); // only if quarter actually ended
             ++quarter;
         }
+
+        var homeLineup = {};
+        var awayLineup = {};
+        quarter = undefined;
+        var subs = [];
+        game.events.forEach(function(ev) {
+            if (ev.type == NBA.Event.QUARTER_START) {
+                quarter = ev.data;
+                homeLineup = {};
+                awayLineup = {};
+            } else if (ev.type == NBA.Event.QUARTER_END) {
+                var playerId;
+                for (playerId in homeLineup) {
+                    // console.log(game.home.players[playerId].name + " is in the game, subbing out for " + ev.data + " " + playerId);
+                    subs.push(new NBA.Event(NBA.Event.SUBBED_OUT, ev.time, home, homePlayers[playerId]));
+                }
+                for (playerId in awayLineup) {
+                    subs.push(new NBA.Event(NBA.Event.SUBBED_OUT, ev.time, away, awayPlayers[playerId]));
+                }
+                // game.events.splice.apply(game.events, subs);
+                // i += subs.length - 2;
+            } else if (ev.data instanceof NBA.Player) {
+                var home = ev.team === game.home;
+                var lineup = home ? homeLineup : awayLineup;
+                if (ev.type == NBA.Event.SUBBED_IN) {
+                    lineup[ev.data.id] = ev.data.name + " sub";
+                    if (Object.keys(lineup).length > 5) {
+                        console.log("Too many players for", ev.time.mmss(), ev.team.abbrev, "\n", JSON.stringify(lineup, null, 4));
+                    }
+                } else {
+                    if (!lineup[ev.data.id]) {
+                        subs.push(new NBA.Event(NBA.Event.SUBBED_IN, NBA.Time.quarterStart(quarter), ev.team, ev.data));
+                        // game.events.splice(lastQuarterStart, 0, new
+                        if (ev.type != NBA.Event.SUBBED_OUT) {
+                            lineup[ev.data.id] = ev.data.name + " other " + ev.type + " " + ev.time.mmss();
+                            if (Object.keys(lineup).length > 5) {
+                                console.log("2 Too many players for", ev.time.mmss(), ev.team.abbrev, "\n", JSON.stringify(lineup, null, 4));
+                            }
+                        }
+                    }
+
+                    if (ev.type == NBA.Event.SUBBED_OUT) {
+                        // console.log("removing", ev.data.name);
+                        assert(ev.data.id in lineup);
+                        delete lineup[ev.data.id];
+                    }
+                }
+            }
+        });
+        for (var i=0; i<game.events.length; ++i) {
+            // console.log(game.events[i].type);
+            console.log(game.events[i].toString());
+        }
+        game.events.push.apply(game.events, subs);
+        game.events.sort(function(l, r) {
+            var ret = l.time.compare(r.time);
+            if (!ret) {
+                function typeScore(type) {
+                    switch (type) {
+                    case NBA.Event.QUARTER_END:
+                        return -1;
+                    case NBA.Event.QUARTER_START:
+                        return 3;
+                    case NBA.Event.SUBBED_OUT:
+                        return 2;
+                    case NBA.Event.SUBBED_IN:
+                        return 1;
+                    default:
+                        break;
+                    }
+                    return 0;
+                }
+
+                var lscore = typeScore(l.type);
+                var rscore = typeScore(r.type);
+                return rscore - lscore;
+
+                // switch (l.type
+                // if (l.type != r.type)
+                //     return r.type - l.type;
+                // if (!l.team != !r.team)
+                //     return !l.team ? -1 : 1;
+                // if (l.team != r.team)
+                //     return l.team == home ? -1 : 1;
+                // if (!l.data != !r.data)
+                //     return !l.data ? -1 : 1;
+                // if (l.data instanceof NBA.Player && r.data instanceof NBA.Player)
+                //     return l.data.name.localeCompare(r.data.name);
+            }
+            return ret;
+        });
+
         // for (var i=0; i<game.events.length; ++i) {
-        //     console.log(game.events[i].type, game.events[i].toString());
+        //     // console.log(game.events[i].type);
+        //     console.log(game.events[i].toString());
         // }
         cb(undefined, game);
     }
