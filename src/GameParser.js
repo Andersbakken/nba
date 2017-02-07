@@ -129,7 +129,8 @@ function parseQuarters(league, net, data, cb) {
 
                     var matched;
                     var misses = [];
-                    forEachPlayer(homePlayer, function(player) {
+                    var ignoreSeen = false;
+                    function tryPlayer(player) {
                         var id = player[playerDataIndexes.PLAYER_ID];
                         if (!name) {
                             // console.log("trying by id", playerIdOrName, player[playerDataIndexes.PLAYER_ID], JSON.stringify(player));
@@ -140,7 +141,7 @@ function parseQuarters(league, net, data, cb) {
                             }
                             return true;
                         } else {
-                            if (!(id in seenPlayerIds))
+                            if (!ignoreSeen && !(id in seenPlayerIds))
                                 return true;
                             var playerNames = player[playerDataIndexes.PLAYER].split(' ');
                             misses.push(player[playerDataIndexes.PLAYER]);
@@ -166,7 +167,13 @@ function parseQuarters(league, net, data, cb) {
                             matched = player;
                             return false;
                         }
-                    });
+                    }
+                    forEachPlayer(homePlayer, tryPlayer);
+                    if (!matched) {
+                        ignoreSeen = true;
+                        forEachPlayer(homePlayer, tryPlayer);
+                    }
+
                     var ret;
                     if (matched) {
                         ret = new NBA.Player(matched[playerDataIndexes.PLAYER], matched[playerDataIndexes.PLAYER_ID]);
@@ -175,7 +182,7 @@ function parseQuarters(league, net, data, cb) {
                         players[ret.id] = ret;
                         players[playerIdOrName] = ret;
                     } else {
-                        console.log("COULDN'T CREATE PLAYER", playerIdOrName, homePlayer, "name", name, "misses", misses);
+                        console.log("COULDN'T CREATE PLAYER", playerIdOrName, homePlayer, "name", name, "misses", misses, description);
                     }
                     return ret;
                 }
@@ -350,20 +357,20 @@ function parseQuarters(league, net, data, cb) {
             } else if (ev.data instanceof NBA.Player) {
                 var lineup = ev.team === game.home ? homeLineup : awayLineup;
                 if (ev.type == NBA.Event.SUBBED_IN) {
+                    // console.log("adding", ev.toString());
                     lineup[ev.data.id] = true;
                     assert(Object.keys(lineup).length <= 5);
                 } else {
                     if (!lineup[ev.data.id]) {
                         subs.push(new NBA.Event(NBA.Event.SUBBED_IN, NBA.Time.quarterStart(quarter), ev.team, ev.data));
                         // game.events.splice(lastQuarterStart, 0, new
-                        if (ev.type != NBA.Event.SUBBED_OUT) {
-                            lineup[ev.data.id] = true;
-                            assert(Object.keys(lineup).length <= 5);
-                        }
+                        // console.log("adding", ev.toString());
+                        lineup[ev.data.id] = true;
+                        assert(Object.keys(lineup).length <= 5);
                     }
 
                     if (ev.type == NBA.Event.SUBBED_OUT) {
-                        // console.log("removing", ev.data.name);
+                        // console.log("removing", ev.toString());
                         assert(ev.data.id in lineup);
                         delete lineup[ev.data.id];
                     }
