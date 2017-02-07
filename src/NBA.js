@@ -316,11 +316,12 @@ Event.SUBBED_IN = 18;
 Event.SUBBED_OUT = 19;
 Event.MINUTES = 20;
 Event.STARTED = 21;
+Event.PLUSMINUS = 22;
 // team
-Event.TIMEOUT = 22;
-Event.TIMEOUT_20S = 23;
-Event.QUARTER_START = 24;
-Event.QUARTER_END = 25;
+Event.TIMEOUT = 23;
+Event.TIMEOUT_20S = 24;
+Event.QUARTER_START = 25;
+Event.QUARTER_END = 26;
 Event.numEvents = Event.QUARTER_END + 1;
 Event.eventNames = (function() {
     var ret = {};
@@ -423,6 +424,8 @@ function BoxScore(game, maxTime)
     var homeSubs = [];
     var awaySubs = [];
     var expired = false;
+    var homePtsSinceQuarterStart = 0;
+    var awayPtsSinceQuarterStart = 0;
     for (var i=0; i<game.events.length; ++i) {
         var ev = game.events[i];
         if (!expired && maxTime && ev.time.value > maxTime.value)
@@ -465,14 +468,31 @@ function BoxScore(game, maxTime)
             subs.push({ type: Event.SUBBED_OUT, time: ev.time, player: ev.data.id, name: ev.data.name, foo: "out1" });
             break;
         }
+        var pp;
+        if (home) {
+            homePtsSinceQuarterStart += pts;
+            awayPtsSinceQuarterStart -= pts;
+        } else {
+            awayPtsSinceQuarterStart += pts;
+            homePtsSinceQuarterStart -= pts;
+        }
+
         if (!expired) {
             var teamStats = home ? this.homeStats : this.awayStats;
             ++teamStats[ev.type];
             teamStats[Event.PTS] += pts;
+            teamStats[Event.PLUSMINUS] += pts;
+            var otherTeamStats = home ? this.awayStats : this.homeStats;
+            otherTeamStats[Event.PLUSMINUS] -= pts;
         }
         if (ev.data instanceof Player) {
             if (!lineup[ev.data.id] && ev.type != Event.SUBBED_OUT && ev.type != Event.SUBBED_IN) {
                 lineup[ev.data.id] = true;
+                if (home) {
+
+                } else {
+
+                }
                 if (quarter == 0)
                     this.players[ev.data.id][Event.STARTED] = true;
                 subs.push({ type: Event.SUBBED_IN, time: Time.quarterStart(quarter), player: ev.data.id, name: ev.data.name, foo: "in3" });
@@ -607,9 +627,9 @@ BoxScore.prototype.print = function() {
     function formatTeam(team, players) {
         var stats = (team == that.game.home ? that.homeStats : that.awayStats);
         console.log(team.name + " - " + stats[Event.PTS]);
-        console.log("----------------------------------------------------------------------------------------------------------------------------------------");
-        console.log("Player                   MIN   FGM   FGA   FG%   3PM   3PA   3P%   FTM   FTA   FT%   ORB   DRB   TRB   AST   STL   BLK   TOV    PF   PTS");
-        console.log("----------------------------------------------------------------------------------------------------------------------------------------");
+        console.log("----------------------------------------------------------------------------------------------------------------------------------------------");
+        console.log("Player                   MIN   FGM   FGA   FG%   3PM   3PA   3P%   FTM   FTA   FT%   ORB   DRB   TRB   AST   STL   BLK   TOV    PF   PTS   +/-");
+        console.log("----------------------------------------------------------------------------------------------------------------------------------------------");
 
         var sorted = players.sort(function(l, r) {
             var ll = that.players[l.id];
@@ -639,12 +659,14 @@ BoxScore.prototype.print = function() {
             str += pad(stats[Event.TO], 6);
             str += pad(stats[Event.PF], 6);
             str += pad(stats[Event.PTS], 6);
+            str += pad(stats[Event.PLUSMINUS], 6);
+
             console.log(str);
         }
         sorted.forEach(function(player) { formatLine(player.name, that.players[player.id]); });
-        console.log("----------------------------------------------------------------------------------------------------------------------------------------");
+        console.log("----------------------------------------------------------------------------------------------------------------------------------------------");
         formatLine("Total", stats);
-        console.log("----------------------------------------------------------------------------------------------------------------------------------------");
+        console.log("----------------------------------------------------------------------------------------------------------------------------------------------");
     }
     formatTeam(this.game.away, this.awayPlayers);
     console.log();
