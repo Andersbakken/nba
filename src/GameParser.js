@@ -320,7 +320,7 @@ function parseQuarters(league, net, data, cb) {
                     return;
                 }
 
-                if (/ Violation :/.exec(description))
+                if (/ Violation *:/.exec(description))
                     return;
 
                 if (/^Jump Ball /.exec(description))
