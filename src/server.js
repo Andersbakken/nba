@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /*global require, __dirname */
-const argv = require('yargs').usage("Usage: %0 --game [arg] --max-time [time]").argv;
+const argv = require('yargs').usage("Usage: %0 --game [arg] --max-time [time] --log-file [file] --verbose").argv;
 
 const NBA = require('./NBA.js');
 const process = require('process');
@@ -11,6 +11,10 @@ const fs = require('fs');
 const Net = require('./Net.js');
 const bsearch = require('binary-search');
 const GameParser = require('./GameParser.js');
+var Log = require('./Log.js');
+var log = Log.log;
+var verbose = Log.verbose;
+Log.init(argv);
 
 const lowerBound = function(haystack, needle, comparator) {
     var idx = bsearch(haystack, needle, comparator);

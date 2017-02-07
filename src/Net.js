@@ -3,6 +3,9 @@
 var safe = require('safetydance');
 var fs = require('fs');
 var request = require('request');
+var Log = require('./Log.js');
+var log = Log.log;
+var verbose = Log.verbose;
 
 function Net(options)
 {
