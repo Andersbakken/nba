@@ -1,6 +1,7 @@
 /* global require, module */
 
 var leftPad = require('left-pad');
+var assert = require('assert');
 
 // --- misc ---
 function currentSeasonYear() { // returns 2017 in 2016-2017 season
@@ -406,11 +407,15 @@ function BoxScore(game, maxTime)
     this.homePlayers = [];
 
     var player, p;
+    // var curry;
     for (player in game.away.players) {
         p = game.away.players[player];
+        // if (p.name == "Stephen Curry")
+        //     curry = p;
         this.players[player] = values();
         this.awayPlayers.push(p);
     }
+    // assert(curry != undefined);
 
     for (player in game.home.players) {
         p = game.home.players[player];
@@ -421,60 +426,54 @@ function BoxScore(game, maxTime)
     var homeLineup = {};
     var awayLineup = {};
     var quarter = undefined;
-    var homeSubs = [];
-    var awaySubs = [];
     var expired = false;
-    var homePtsSinceQuarterStart = 0;
-    var awayPtsSinceQuarterStart = 0;
     for (var i=0; i<game.events.length; ++i) {
         var ev = game.events[i];
         if (!expired && maxTime && ev.time.value > maxTime.value)
             expired = true;
         if (ev.type == Event.QUARTER_START) {
             quarter = ev.data;
-            homeLineup = {};
-            awayLineup = {};
             continue;
         } else if (ev.type == Event.QUARTER_END) {
-            var playerId;
-            for (playerId in homeLineup) {
-                // console.log(game.home.players[playerId].name + " is in the game, subbing out for " + ev.data + " " + playerId);
-                homeSubs.push({type: Event.SUBBED_OUT, time: ev.time, player: playerId, name: game.home.players[playerId].name, foo: "out2" });
-            }
-            for (playerId in awayLineup) {
-                awaySubs.push({type: Event.SUBBED_OUT, time: ev.time, player: playerId, name: game.away.players[playerId].name, foo: "out2"  });
-            }
             continue;
         }
 
         var home = ev.team === game.home;
         var lineup = home ? homeLineup : awayLineup;
-        var subs = home ? homeSubs : awaySubs;
+        var otherLineup = home ? awayLineup : homeLineup;
         var pts = 0;
         switch (ev.type) {
         case Event.FGM2: pts = 2; break;
         case Event.FGM3: pts = 3; break;
         case Event.FTM: pts = 1; break;
         case Event.SUBBED_IN:
-            lineup[ev.data.id] = true;
-            subs.push({type: Event.SUBBED_IN, time: ev.time, player: ev.data.id, name: ev.data.name, foo: "in1" });
+            assert(!(ev.data.id in lineup));
+            lineup[ev.data.id] = ev.time;
+            if (quarter == 0)
+                this.players[ev.data.id][Event.STARTED] = true;
             break;
         case Event.SUBBED_OUT:
-            if (!lineup[ev.data.id]) {
-                subs.push({ type: Event.SUBBED_IN, time: Time.quarterStart(quarter), player: ev.data.id, name: ev.data.name, foo: "in4" });
-            } else {
-                delete lineup[ev.data.id];
+            assert(ev.data.id in lineup);
+            var start = lineup[ev.data.id].value;
+            var end = ev.time.value;
+            if (maxTime) {
+                start = Math.min(start, maxTime.value);
+                end = Math.min(end, maxTime.value);
             }
-            subs.push({ type: Event.SUBBED_OUT, time: ev.time, player: ev.data.id, name: ev.data.name, foo: "out1" });
+            var duration = end - start;
+            if (!this.players[ev.data.id][Event.MINUTES]) {
+                this.players[ev.data.id][Event.MINUTES] = new Time(duration);
+            } else {
+                this.players[ev.data.id][Event.MINUTES].add(duration);
+            }
+            if (!teamStats[Event.MINUTES]) {
+                teamStats[Event.MINUTES] = new Time(duration);
+            } else {
+                teamStats[Event.MINUTES].add(duration);
+            }
+
+            delete lineup[ev.data.id];
             break;
-        }
-        var pp;
-        if (home) {
-            homePtsSinceQuarterStart += pts;
-            awayPtsSinceQuarterStart -= pts;
-        } else {
-            awayPtsSinceQuarterStart += pts;
-            homePtsSinceQuarterStart -= pts;
         }
 
         if (!expired) {
@@ -484,71 +483,30 @@ function BoxScore(game, maxTime)
             teamStats[Event.PLUSMINUS] += pts;
             var otherTeamStats = home ? this.awayStats : this.homeStats;
             otherTeamStats[Event.PLUSMINUS] -= pts;
-        }
-        if (ev.data instanceof Player) {
-            if (!lineup[ev.data.id] && ev.type != Event.SUBBED_OUT && ev.type != Event.SUBBED_IN) {
-                lineup[ev.data.id] = true;
-                if (home) {
-
-                } else {
-
-                }
-                if (quarter == 0)
-                    this.players[ev.data.id][Event.STARTED] = true;
-                subs.push({ type: Event.SUBBED_IN, time: Time.quarterStart(quarter), player: ev.data.id, name: ev.data.name, foo: "in3" });
-            }
-            if (!expired) {
+            if (ev.data instanceof Player) {
                 ++this.players[ev.data.id][ev.type];
                 this.players[ev.data.id][Event.PTS] += pts;
             }
-        }
-    }
-    var that = this;
-    function processSubs(subs, teamStats) {
-        var map = {};
-        var ms = {};
+            if (pts) {
+                assert(Object.keys(lineup).length == 5, "lineup size wrong: " + Object.keys(lineup));
+                assert(Object.keys(otherLineup).length == 5, "other lineup size wrong: " + Object.keys(otherLineup));
+                var id;
+                for (id in lineup) {
+                    this.players[id][Event.PLUSMINUS] += pts;
+                    // if (id == curry.id) {
+                    //     console.log("curry gets", pts, "for", ev.toString());
+                    // }
+                }
 
-        var sorted = subs.sort(function(l, r) { return l.time.compare(r.time); });
-        sorted.forEach(function(sub) {
-            if (sub.type == Event.SUBBED_IN) {
-                // console.log(`processing sub in time: ${sub.time} player: ${sub.name} playerId: ${sub.player} ${sub.foo}`);
-                map[sub.player] = sub.time;
-            } else {
-                // console.log(`processing sub out time: ${sub.time} player: ${sub.name} playerId: ${sub.player} ${sub.foo}`);
-                // if (!map[sub.player]) {
-                //     console.error(`Somehow ${sub.name} isn't on the court`);
-                //     return;
-                // }
-                if (!map[sub.player]) {
-                    console.log(`expected ${sub.player} to be on the court but he aint`);
-                    console.log(Object.keys(map));
-                }
-                var start = map[sub.player].value;
-                var end = sub.time.value;
-                if (maxTime) {
-                    start = Math.min(start, maxTime.value);
-                    end = Math.min(end, maxTime.value);
-                }
-                var duration = end - start;
-                delete map[sub.player];
-                if (!ms[sub.player]) {
-                    ms[sub.player] = duration;
-                } else {
-                    ms[sub.player] += duration;
+                for (id in otherLineup) {
+                    this.players[id][Event.PLUSMINUS] -= pts;
+                    // if (id == curry.id) {
+                    //     console.log("curry gets", -pts, "for", ev.toString());
+                    // }
                 }
             }
-        });
-        var total = new Time(0);
-        for (var id in ms) {
-            total.add(ms[id]);
-            that.players[id][Event.MINUTES] = (new Time(ms[id])).mmss();
         }
-        // ### something about this is not working at all. No idea why.
-        // console.log("shit", total.mmss(), teamStats, total.date.valueOf());
-        teamStats[Event.MINUTES] = total.mmss();
     }
-    processSubs(homeSubs, this.homeStats);
-    processSubs(awaySubs, this.awayStats);
 };
 
 BoxScore.prototype.visit = function(cb) {
@@ -640,7 +598,7 @@ BoxScore.prototype.print = function() {
         });
         function formatLine(name, stats) {
             var str = pad(name, 22);
-            str += pad(stats[Event.MINUTES], 6);
+            str += pad(stats[Event.MINUTES].mmss(), 6);
             str += pad(stats[Event.FGM2] + stats[Event.FGM3], 6);
             str += pad(stats[Event.FGA2] + stats[Event.FGA3], 6);
             str += percentage(stats[Event.FGM2] + stats[Event.FGM3], stats[Event.FGA2] + stats[Event.FGA3]);

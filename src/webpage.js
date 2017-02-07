@@ -67,7 +67,7 @@ function renderBoxScore(maxTime)
             html += '<tr>';
             var idx = 0;
             data.forEach((d) => {
-                if (/%$/.exec(headers[idx++])) {
+                if (/%$/.exec(headers[idx])) {
                     if (!d) {
                         d = "";
                     } else if (d == 1) {
@@ -75,7 +75,10 @@ function renderBoxScore(maxTime)
                     } else {
                         d = "." + d.toFixed(3).substr(1).substr(1);
                     }
+                } else if (headers[idx] == 'mins') {
+                    d = d.mmss();
                 }
+                ++idx;
                 html += `<td><pre>${d}</pre></td>`;
             });
             html += '</tr>';
