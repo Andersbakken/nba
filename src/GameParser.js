@@ -1,7 +1,8 @@
 /* global require, module */
 
-var NBA = require('./NBA.js');
-var assert = require('assert');
+const NBA = require('./NBA.js');
+const assert = require('assert');
+const safe = require('safetydance');
 
 /*
  "GAME_ID",
@@ -40,7 +41,7 @@ var assert = require('assert');
  */
 
 
-function GameParser(league, nbaData, cb) {
+function parseGame(league, nbaData, cb) {
     // var title = html.indexOf("<title>");
     // var titleEnd = html.indexOf(" Play-By-Play", title + 7);
     // if (title == -1 || titleEnd == -1) {
@@ -247,4 +248,335 @@ function GameParser(league, nbaData, cb) {
     cb(undefined, game);
 }
 
-module.exports = GameParser;
+function parseQuarters(league, net, data, cb) {
+    // var title = html.indexOf("<title>");
+    // var titleEnd = html.indexOf(" Play-By-Play", title + 7);
+    // if (title == -1 || titleEnd == -1) {
+    //     cb("Bad HTML!");
+    //     return;
+    // }
+    // var teams = /^(.*) at (.*)$/.exec(html.substring(title + 7, titleEnd));
+
+    // assert(Array.isArray(data.quarters));
+    // console.log(`got ${JSON.stringify(data.gameData)} and ${data.quarters.length} quarters`);
+    // console.log(data.quarters[0].plays[0]);
+    // console.log("shit", data);
+    var home = league.find(data.gameData.home);
+    var away = league.find(data.gameData.away);
+    if (!home) {
+        cb(`Can't find home team from ${data.gameData.home}`);
+        return;
+    }
+    if (!away) {
+        cb(`Can't find home team from ${data.gameData.away}`);
+        return;
+    }
+    // var homeId = rowSet[1][indexes.PLAYER1_TEAM_ID];
+    // var awayId = rowSet[1][indexes.PLAYER2_TEAM_ID];
+
+    // var plain = html.replace(/<[^>]*>/g, '');
+    // var lines = plain.split('\n');
+    // // console.log(lines);
+    // // return;
+    // // console.log(lines);
+
+    var game = new NBA.Game(home, away);
+    var season = NBA.currentSeasonName();
+    var homePlayerData = -1, awayPlayerData = -1;
+    var playerDataIndexes = {};
+    var errors = [];
+
+    // ### this code is atrocious and needs promises
+    net.get(`http://stats.nba.com/stats/commonteamroster/?TeamId=${home.id}&Season=${season}`, function(error, result) {
+        if (error) {
+            homePlayerData = error;
+        } else {
+            try {
+                homePlayerData = JSON.parse(result.body);
+                if (homePlayerData) {
+                    for (var i=0; i<homePlayerData.resultSets[0].headers.length; ++i) {
+                        playerDataIndexes[homePlayerData.resultSets[0].headers[i]] = i;
+                    }
+                }
+            } catch (err) {
+                homePlayerData = err;
+            }
+        }
+        parse();
+    });
+    net.get(`http://stats.nba.com/stats/commonteamroster/?TeamId=${away.id}&Season=${season}`, function(error, result) {
+        if (error) {
+            awayPlayerData = error;
+        } else {
+            try {
+                awayPlayerData = JSON.parse(result.body);
+            } catch (err) {
+                awayPlayerData = err;
+            }
+        }
+        parse();
+    });
+
+    function parse() {
+        if (homePlayerData == -1 || awayPlayerData == -1)
+            return;
+
+        if (typeof homePlayerData == 'string') {
+            cb(`Couldn't get home team data: ${homePlayerData}`);
+            return;
+        }
+        if (typeof awayPlayerData == 'string') {
+            cb(`Couldn't get away team data: ${awayPlayerData}`);
+            return;
+        }
+
+        safe.fs.writeFileSync(`/tmp/home.json`, JSON.stringify(homePlayerData, undefined, 4));
+        safe.fs.writeFileSync(`/tmp/away.json`, JSON.stringify(awayPlayerData, undefined, 4));
+
+        var homePlayers = {};
+        var awayPlayers = {};
+        var lastTeamMiss;
+        var quarter = 0;
+
+        while (true) {
+            if (data.quarters.length <= quarter)
+                break;
+            var plays = data.quarters[quarter].plays;
+            game.events.push(new NBA.Event(NBA.Event.QUARTER_START, NBA.Time.quarterStart(quarter), undefined, quarter));
+
+            plays.forEach(function(play) {
+                var description = play.description;
+                // console.log("description", description);
+                if (!description)
+                    return;
+                var match = /\[([A-Z][A-Z][A-Z])[ \]]/.exec(description);
+                if (!match) {
+                    // console.log("no match", description);
+                    return;
+                }
+                var time = NBA.Time.quarterEnd(quarter);
+                var timeLeft = play.clock.split(':');
+                time.add(-(parseInt(timeLeft[0]) * 60 * 1000));
+                time.add(-(parseInt(timeLeft[1]) * 1000));
+                console.log(match[1], time.mmss(), description);
+                var homeEvent = match[1] == home.abbrev;
+                assert(homeEvent || match[1] == away.abbrev);
+                function forEachPlayer(homeTeam, cb) {
+                    var data = (homeTeam ? homePlayerData : awayPlayerData).resultSets[0].rowSet;
+                    for (var i=0; i<data.length; ++i) {
+                        // console.log("trying", i, data[i]);
+                        if (!cb(data[i]))
+                            break;
+                    }
+                }
+                function addPlayer(playerIdOrName, homeOverride) {
+                    var name = /^[0-9]*$/.exec(playerIdOrName) ? undefined : playerIdOrName.split(' ');
+                    // console.log(name, playerIdOrName);
+                    var homePlayer = homeEvent;
+                    if (homeOverride != undefined)
+                        homePlayer = homeOverride;
+
+                    // console.log("addPlayer", homePlayer, playerIdOrName, name);
+
+                    var players = (homePlayer ? homePlayers : awayPlayers);
+                    if (players[playerIdOrName])
+                        return players[playerIdOrName];
+
+                    var matched;
+                    var misses = [];
+                    forEachPlayer(homePlayer, function(player) {
+                        if (!name) {
+                            // console.log("trying by id", playerIdOrName, player[playerDataIndexes.PLAYER_ID], JSON.stringify(player));
+                            if (player[playerDataIndexes.PLAYER_ID] == playerIdOrName) {
+                                // console.log("found dude");
+                                matched = player;
+                                return false;
+                            }
+                            return true;
+                        } else {
+                            var playerNames = player[playerDataIndexes.PLAYER].split(' ');
+                            misses.push(player[playerDataIndexes.PLAYER]);
+                            // console.log("checking names", name, playerNames);
+                            if (name.length == 1) {
+                                // console.log("considering", name[0], playerNames);
+                                if (playerNames[playerNames.length - 1] == name[0]) {
+                                    matched = player;
+                                    return false;
+                                }
+                                return true;
+                            }
+                            if (playerNames.length < name.length) {
+                                return true;
+                            }
+                            var pidx = playerNames.length - name.length;
+                            for (var nidx=0; nidx<name.length; ++nidx, ++pidx) {
+                                // console.log("checking startswith", real[i], approx[i], real[i].lastIndexOf(approx[i], 0));
+                                // console.log(pidx, playerNames.length, nidx, name.length);
+                                if (playerNames[pidx].lastIndexOf(name[nidx], 0) != 0)
+                                    return true;
+                            }
+                            matched = player;
+                            return false;
+                        }
+                    });
+                    var ret;
+                    if (matched) {
+                        ret = new NBA.Player(matched[playerDataIndexes.PLAYER], matched[playerDataIndexes.PLAYER_ID]);
+                        players[ret.name] = ret;
+                        players[ret.id] = ret;
+                        players[playerIdOrName] = ret;
+                    } else {
+                        console.log("COULDN'T CREATE PLAYER", playerIdOrName, homePlayer, "name", name, "misses", misses);
+                    }
+                    return ret;
+                }
+
+                function assist()
+                {
+                    // var player = addPlayer(2);
+                    // if (player)
+                    //     game.events.push(new NBA.Event(NBA.Event.AST, time, homeEvent ? home : away, player));
+                }
+                function madeShot(attempt, make)
+                {
+                    // var shooter = addPlayer(play.personId);
+                    // game.events.push(new NBA.Event(attempt , time, homeEvent ? home : away, shooter));
+                    // game.events.push(new NBA.Event(make, time, homeEvent ? home : away, shooter));
+                }
+
+                // ### need to handle team turnover
+                if (/ Turnover : /.exec(description)) {
+                    var player = play.personId ? addPlayer(play.personId) : undefined;
+                    // console.log(JSON.stringify(play), player, "drit", play.personId, "baesj", homeEvent);
+                    game.events.push(new NBA.Event(NBA.Event.TO, time, homeEvent ? home : away, player));
+                    if (player) {
+                        var toMatch = /Turnover :.*\) Steal:([^(]*) \(/.exec(description);
+                        if (toMatch) {
+                            game.events.push(new NBA.Event(NBA.Event.STL, time, homeEvent ? away : home, addPlayer(toMatch[1], !homeEvent)));
+                        }
+                    }
+                    return;
+                }
+
+                if (/Timeout : Short/.exec(description)) {
+                    game.events.push(new NBA.Event(NBA.Event.TIMEOUT_20S, time, homeEvent ? home : away));
+                    return;
+                }
+
+                if (/Timeout : Regular/.exec(description)) {
+                    game.events.push(new NBA.Event(NBA.Event.TIMEOUT, time, homeEvent ? home : away));
+                    return;
+                }
+
+                if (/ Team Rebound$/.exec(description)) { // team rebound
+                    game.events.push(new NBA.Event(NBA.Event.TRB, time, homeEvent ? home : away));
+                    return;
+                }
+
+                if (/ Rebound \(/.exec(description)) {
+                    var reboundType = play.teamId == lastTeamMiss ? NBA.Event.ORB : NBA.Event.DRB;
+                    game.events.push(new NBA.Event(reboundType, time, homeEvent ? home : away, addPlayer(play.personId)));
+                    return;
+                }
+
+                if (/Free Throw .* Missed$/.exec(description)) {
+                    lastTeamMiss = (homeEvent ? home : away).id;
+                    game.events.push(new NBA.Event(NBA.Event.FTA, time, homeEvent ? home : away, addPlayer(play.personId)));
+                    return;
+                }
+
+                if (/3pt Shot: Missed$/.exec(description)) {
+                    lastTeamMiss = (homeEvent ? home : away).id;
+                    game.events.push(new NBA.Event(NBA.Event.FG3A, time, homeEvent ? home : away, addPlayer(play.personId)));
+                    return;
+                }
+
+                if (/: Missed$/.exec(description)) {
+                    lastTeamMiss = (homeEvent ? home : away).id;
+                    game.events.push(new NBA.Event(NBA.Event.FGA, time, homeEvent ? home : away, addPlayer(play.personId)));
+                    return;
+                }
+
+                if (/ Free Throw ([123] of|Technical |Flagrant )/.exec(description)) {
+                    madeShot(NBA.Event.FTA, NBA.Event.FTM);
+                    return;
+                }
+
+                if (/ Technical \(/.exec(description)) {
+                    game.events.push(new NBA.Event(NBA.Event.TF, time, homeEvent ? home : away, addPlayer(play.personId)));
+                    return;
+                }
+
+                if (description.indexOf('lagrant') != -1) {
+                    console.log("UNHANDLED FLAGRANT", description);
+                    assert(false);
+                }
+                match = /Flagrant Foul: ([12]) /.exec(description);
+                if (match) {
+                    game.events.push(new NBA.Event(match[1] == '1' ? NBA.Event.FF1 : NBA.Event.FF2, time, homeEvent ? home : away, addPlayer(play.personId)));
+                    return;
+                }
+
+                if (/ Foul: /.exec(description)) {
+                    game.events.push(new NBA.Event(NBA.Event.PF, time, homeEvent ? home : away, addPlayer(play.personId)));
+                    return;
+                }
+
+                match = / Substitution replaced by (.*)$/.exec(description);
+                if (match) {
+                    game.events.push(new NBA.Event(NBA.Event.SUBBED_OUT, time, homeEvent ? home : away, addPlayer(play.personId)));
+                    var p = addPlayer(match[1], homeEvent);
+                    // console.log("PLAYER", p, homeEvent, match);
+                    game.events.push(new NBA.Event(NBA.Event.SUBBED_IN, time, homeEvent ? home : away, addPlayer(match[1], homeEvent)));
+                    return;
+                }
+
+                if (/^MISS .* 3PT /.exec(description)) {
+                    lastTeamMiss = (homeEvent ? home : away).id;
+                    game.events.push(new NBA.Event(NBA.Event.FGA3, time, homeEvent ? home : away, addPlayer(play.personId)));
+                    return;
+                }
+
+                if (/^MISS /.exec(description)) {
+                    lastTeamMiss = (homeEvent ? home : away).id;
+                    game.events.push(new NBA.Event(NBA.Event.FGA2, time, homeEvent ? home : away, addPlayer(play.personId)));
+                    return;
+                }
+
+                if (/ 3PT .* \([0-9]+ PTS\)/.exec(description)) {
+                    assist();
+                    madeShot(NBA.Event.FGA3, NBA.Event.FGM3);
+                    return;
+                }
+
+                if (/\([0-9]+ PTS\)/.exec(description)) {
+                    assist();
+                    madeShot(NBA.Event.FGA2, NBA.Event.FGM2);
+                    return;
+                }
+
+                if (/\([0-9]+ BLK\)/.exec(description)) {
+                    // ### not done
+                    // game.events.push(new NBA.Event(NBA.Event.BLK, time, homeEvent ? home : away, addPlayer(3)));
+                    return;
+                }
+
+                if (/ Violation:/.exec(description))
+                    return;
+
+                if (/^Jump Ball /.exec(description))
+                    return;
+
+                console.log("unhandled event", description);
+            });
+            game.events.push(new NBA.Event(NBA.Event.QUARTER_END, NBA.Time.quarterEnd(quarter), undefined, quarter));
+            ++quarter;
+        }
+        for (var i=0; i<game.events.length; ++i) {
+            console.log(game.events[i].toString());
+        }
+        cb(undefined, game);
+    }
+}
+
+module.exports = { parseGame: parseGame, parseQuarters: parseQuarters };

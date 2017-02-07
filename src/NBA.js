@@ -6,7 +6,14 @@ var leftPad = require('left-pad');
 function currentSeasonYear() { // returns 2017 in 2016-2017 season
     var date = new Date;
     return date.getMonth() >= 9 ? date.getFullYear() + 1 : date.getFullYear();
-};
+}
+
+function currentSeasonName() {
+    var yearNumber = currentSeasonYear();
+    var lastYear = "" + (yearNumber - 1);
+    var year = ("" + yearNumber).substr(2);
+    return `${lastYear}-${year}`;
+}
 
 function formatDate(date)
 {
@@ -185,52 +192,51 @@ Conference.prototype.team = function(name) {
 
 function League()
 {
-    var teamId = 0;
     this.conferences = {
         "Eastern": new Conference("Eastern", [
             new Division("Atlantic", [
-                new Team("Boston Celtics", "BOS", ++teamId),
-                new Team("Brooklyn Nets", "BKN", ++teamId),
-                new Team("New York Knicks", "NYK", ++teamId),
-                new Team("Philadelphia 76ers", "PHI", ++teamId),
-                new Team("Toronto Raptors", "TOR", ++teamId)
+                new Team("Boston Celtics", "BOS", 1610612738),
+                new Team("Brooklyn Nets", "BKN", 1610612751),
+                new Team("New York Knicks", "NYK", 1610612740),
+                new Team("Philadelphia 76ers", "PHI", 1610612755),
+                new Team("Toronto Raptors", "TOR", 1610612761)
             ]),
             new Division("Central", [
-                new Team("Chicago Bulls", "CHI", ++teamId),
-                new Team("Cleveland Cavaliers", "CLE", ++teamId),
-                new Team("Detroit Pistons", "DET", ++teamId),
-                new Team("Indiana Pacers", "IND", ++teamId),
-                new Team("Milwaukee Bucks", "MIL", ++teamId)
+                new Team("Chicago Bulls", "CHI", 1610612741),
+                new Team("Cleveland Cavaliers", "CLE", 1610612739),
+                new Team("Detroit Pistons", "DET", 1610612765),
+                new Team("Indiana Pacers", "IND", 1610612754),
+                new Team("Milwaukee Bucks", "MIL", 1610612749)
             ]),
             new Division("Southeast", [
-                new Team("Atlanta Hawks", "ATL", ++teamId),
-                new Team("Charlotte Hornets", "CHA", ++teamId),
-                new Team("Miami Heat", "MIA", ++teamId),
-                new Team("Orlando Magic", "ORL", ++teamId),
-                new Team("Washington Wizards", "WAS", ++teamId)
+                new Team("Atlanta Hawks", "ATL", 1610612737),
+                new Team("Charlotte Hornets", "CHA", 1610612766),
+                new Team("Miami Heat", "MIA", 1610612748),
+                new Team("Orlando Magic", "ORL", 1610612753),
+                new Team("Washington Wizards", "WAS", 1610612764)
             ]),
         ]),
         "Western": new Conference("Western", [
             new Division("Northwest", [
-                new Team("Denver Nuggets", "DEN", ++teamId),
-                new Team("Minnesota Timberwolves", "MIN", ++teamId),
-                new Team("Oklahoma City Thunder", "OKC", ++teamId),
-                new Team("Portland Trail Blazers", "POR", ++teamId),
-                new Team("Utah Jazz", "UTA", ++teamId)
+                new Team("Denver Nuggets", "DEN", 1610612743),
+                new Team("Minnesota Timberwolves", "MIN", 1610612750),
+                new Team("Oklahoma City Thunder", "OKC", 1610612760),
+                new Team("Portland Trail Blazers", "POR", 1610612757),
+                new Team("Utah Jazz", "UTA", 1610612762)
             ]),
             new Division("Pacific", [
-                new Team("Golden State Warriors", "GSW", ++teamId),
-                new Team("Los Angeles Clippers", "LAC", ++teamId),
-                new Team("Los Angeles Lakers", "LAL", ++teamId),
-                new Team("Phoenix Suns", "PHO", ++teamId),
-                new Team("Sacramento Kings", "SAC", ++teamId)
+                new Team("Golden State Warriors", "GSW", 1610612744),
+                new Team("Los Angeles Clippers", "LAC", 1610612746),
+                new Team("Los Angeles Lakers", "LAL", 1610612746),
+                new Team("Phoenix Suns", "PHO", 1610612756),
+                new Team("Sacramento Kings", "SAC", 1610612758)
             ]),
             new Division("Southwest", [
-                new Team("Dallas Mavericks", "DAL", ++teamId),
-                new Team("Houston Rockets", "HOU", ++teamId),
-                new Team("Memphis Grizzlies", "MEM", ++teamId),
-                new Team("New Orleans Pelicans", "NOP", ++teamId),
-                new Team("San Antonio Spurs", "SAS", ++teamId)
+                new Team("Dallas Mavericks", "DAL", 1610612742),
+                new Team("Houston Rockets", "HOU", 1610612745),
+                new Team("Memphis Grizzlies", "MEM", 1610612763),
+                new Team("New Orleans Pelicans", "NOP", 1610612740),
+                new Team("San Antonio Spurs", "SAS", 1610612759)
             ])
         ])
     };
@@ -276,10 +282,10 @@ function Event(type, time, team, data)
 
 Event.prototype.toString = function() {
     var evName = Event.eventNames[this.type];
-    var player = this.data instanceof Player ? this.data.name : "";
-    var team = this.team.name;
+    var player = this.data instanceof Player ? (" " + this.data.name) : "";
+    var team = this.team ? (" " + this.team.name) : "";
     var time = this.time.mmss();
-    return `Event(${time}: ${evName} ${player} ${team})`;
+    return `Event(${time}: ${evName}${player}${team})`;
 };
 
 // scores
@@ -647,6 +653,7 @@ BoxScore.prototype.print = function() {
 
 module.exports = {
     currentSeasonYear: currentSeasonYear,
+    currentSeasonName: currentSeasonName,
     formatDate: formatDate,
     Time: Time,
     Player: Player,

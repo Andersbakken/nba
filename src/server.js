@@ -10,7 +10,7 @@ const express = require('express');
 const fs = require('fs');
 const Net = require('./Net.js');
 const bsearch = require('binary-search');
-const parseGame = require('./GameParser.js');
+const GameParser = require('./GameParser.js');
 
 const lowerBound = function(haystack, needle, comparator) {
     var idx = bsearch(haystack, needle, comparator);
@@ -66,32 +66,71 @@ app.get('/api/games/:date', gamesByDate, (req, res, next) => {
 });
 
 function findGame(req, res, next) {
-    console.log("requesting game", req.params.date, req.params.gameid);
-    var url = `http://stats.nba.com/stats/playbyplayv2?GameId=${req.params.gameid}&StartPeriod=1&EndPeriod=14`;
-    net.get(url, function(err, data) {
-        if (err) {
-            next(new Error(err));
-            return;
+    var err;
+    gamesByDate(req, res, function(error) { err = error; });
+    if (err) {
+        next(err);
+        return;
+    }
+
+    if (!req.games) {
+        next(new Error("Couldn't find games"));
+        return;
+    }
+
+    var game;
+    for (var i=0; i<req.games.length; ++i) {
+        if (req.games[i].gameId == req.params.gameid) {
+            game = req.games[i];
+            break;
         }
-        // console.log("GOT GAME", JSON.stringify(JSON.parse(data.body), undefined, 4));
-        req.game = data.body;
-        safe.fs.writeFileSync("/tmp/game.json", JSON.stringify(JSON.parse(data.body), undefined, 4));
-        try {
-            parseGame(league, JSON.parse(data.body), function(error, game) {
-                if (error) {
-                    net.clearCache(url);
-                    next(new Error(error));
-                } else {
-                    req.game = game;
-                    // if (!req.game.events.length || req.game
-                    next();
-                }
-            });
-        } catch (err) {
-            net.clearCache(url);
-            next(new Error(err));
-        }
-    });
+    }
+    if (!game) {
+        next(new Error(`Can't find game ${req.params.gameid}`));
+        return;
+    }
+
+    console.log(`requesting game http://localhost:8899/api/games/${req.params.date}/${req.params.gameid}`);
+    var quarters = [];
+    function getNextQuarter() {
+        var url = `http://data.nba.net/data/10s/prod/v1/${req.params.date}/${req.params.gameid}_pbp_${quarters.length + 1}.json`;
+        net.get(url, function(err, data) {
+            if (err) {
+                next(new Error(err));
+                return;
+            }
+            if (data.statusCode != 200) {
+                next(new Error(`Got ${data.statusCode} for ${url}`));
+                return;
+            }
+            var quarterData;
+            try {
+                quarterData = JSON.parse(data.body);
+            } catch (err) {
+                next(new Error(err));
+                return;
+            }
+            if (!quarterData || !(quarterData.plays instanceof Array)) {
+                next(new Error("Invalid quarter data: " + url));
+                return;
+            }
+            if (!quarterData.plays.length) {
+                GameParser.parseQuarters(league, net, { gameData: game, quarters: quarters}, function(error, result) {
+                    if (error) {
+                        next(new Error(error));
+                    } else {
+                        req.game = result;
+                        next();
+                    }
+                });
+            } else {
+                safe.fs.writeFileSync(`/tmp/quarter_${quarters.length + 1}.json`, JSON.stringify(quarterData, undefined, 4));
+                quarters.push(quarterData);
+                getNextQuarter();
+            }
+        });
+    }
+    getNextQuarter();
 }
 
 app.get('/api/games/:date/:gameid', findGame, (req, res, next) => {
@@ -141,6 +180,10 @@ net.get('http://www.nba.com/data/10s/prod/v1/' + (NBA.currentSeasonYear() - 1) +
     // console.log(Object.keys(schedule.league.standard));
     app.listen(argv.port || argv.p || 8899, () => {
         console.log("Listening on port", (argv.port || argv.p || 8899));
+    });
+    net.get({url: "http://localhost:8899/api/games/20170202/0021600745", nocache: true }, function(err, response) {
+        console.log(err, response);
+        process.exit();
     });
     // console.log(gamesByDate(new Date()));
 });
