@@ -198,7 +198,7 @@ function League()
             new Division("Atlantic", [
                 new Team("Boston Celtics", "BOS", 1610612738),
                 new Team("Brooklyn Nets", "BKN", 1610612751),
-                new Team("New York Knicks", "NYK", 1610612740),
+                new Team("New York Knicks", "NYK", 1610612752),
                 new Team("Philadelphia 76ers", "PHI", 1610612755),
                 new Team("Toronto Raptors", "TOR", 1610612761)
             ]),
