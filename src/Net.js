@@ -27,7 +27,9 @@ function Net(options)
 function Request(req, filename, cb) {
     this.req = req;
     this.callbacks = [cb];
+    verbose("Net: Actually requesting", req.url);
     request(req.url, (error, response, body) => {
+        verbose("Net: Got response", response.statusCode);
         if (error) {
             this.callbacks.forEach((callback) => {
                 callback(error);
@@ -64,7 +66,9 @@ Net.prototype.get = function(req, cb) {
         var data = safe.JSON.parse(contents);
         if (!data) { // cache gone bad, repair
             safe.fs.unlinkSync(fileName);
+            verbose("Net: cache is bad", req.url, fileName);
         } else {
+            verbose("Net: Cache hit", req.url, fileName);
             data.url = req.url;
             data.source = "cache";
             cb(undefined, data);
