@@ -183,15 +183,17 @@ net.get('http://www.nba.com/data/10s/prod/v1/' + (NBA.currentSeasonYear() - 1) +
     app.listen(argv.port || argv.p || 8899, () => {
         console.log("Listening on port", (argv.port || argv.p || 8899));
     });
-    net.get({url: "http://localhost:8899/api/games/20170202/0021600745", nocache: true }, function(err, response) {
-        if (err || response.statusCode != 200) {
-            console.log("BAD", response.statusCode, err);
-        } else {
-            var game = NBA.Game.decode(JSON.parse(response.body), league);
-            var box = new NBA.BoxScore(game);
-            box.print();
-        }
-        process.exit();
-    });
+    if (argv["test"]) {
+        net.get({url: "http://localhost:8899/api/games/20170206/0021600768", nocache: true }, function(err, response) {
+            if (err || response.statusCode != 200) {
+                console.log("BAD", response.statusCode, err);
+            } else {
+                var game = NBA.Game.decode(JSON.parse(response.body), league);
+                var box = new NBA.BoxScore(game);
+                box.print();
+            }
+            process.exit();
+        });
+    }
     // console.log(gamesByDate(new Date()));
 });
