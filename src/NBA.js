@@ -461,16 +461,8 @@ function BoxScore(game, maxTime)
                 end = Math.min(end, maxTime.value);
             }
             var duration = end - start;
-            if (!this.players[ev.data.id][Event.MINUTES]) {
-                this.players[ev.data.id][Event.MINUTES] = new Time(duration);
-            } else {
-                this.players[ev.data.id][Event.MINUTES].add(duration);
-            }
-            if (!teamStats[Event.MINUTES]) {
-                teamStats[Event.MINUTES] = new Time(duration);
-            } else {
-                teamStats[Event.MINUTES].add(duration);
-            }
+            this.players[ev.data.id][Event.MINUTES] += duration;
+            teamStats[Event.MINUTES] += duration;
 
             delete lineup[ev.data.id];
             break;
@@ -598,7 +590,7 @@ BoxScore.prototype.print = function() {
         });
         function formatLine(name, stats) {
             var str = pad(name, 22);
-            str += pad(stats[Event.MINUTES].mmss(), 6);
+            str += pad((new Time(stats[Event.MINUTES])).mmss(), 6);
             str += pad(stats[Event.FGM2] + stats[Event.FGM3], 6);
             str += pad(stats[Event.FGA2] + stats[Event.FGA3], 6);
             str += percentage(stats[Event.FGM2] + stats[Event.FGM3], stats[Event.FGA2] + stats[Event.FGA3]);

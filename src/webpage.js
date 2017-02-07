@@ -76,7 +76,7 @@ function renderBoxScore(maxTime)
                         d = "." + d.toFixed(3).substr(1).substr(1);
                     }
                 } else if (headers[idx] == 'mins') {
-                    d = d.mmss();
+                    d = (new NBA.Time(d)).mmss();
                 }
                 ++idx;
                 html += `<td><pre>${d}</pre></td>`;
