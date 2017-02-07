@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /*global require, __dirname */
-const argv = require('yargs').usage("Usage: %0 --game [arg] --max-time [time]").argv;
+const argv = require('yargs').usage("Usage: %0 --game [arg] --max-time [time] --log-file [file] --verbose").argv;
 
 const NBA = require('./NBA.js');
 const process = require('process');
@@ -10,7 +10,11 @@ const express = require('express');
 const fs = require('fs');
 const Net = require('./Net.js');
 const bsearch = require('binary-search');
-const parseGame = require('./GameParser.js');
+const GameParser = require('./GameParser.js');
+var Log = require('./Log.js');
+var log = Log.log;
+var verbose = Log.verbose;
+Log.init(argv);
 
 const lowerBound = function(haystack, needle, comparator) {
     var idx = bsearch(haystack, needle, comparator);
@@ -141,6 +145,10 @@ net.get('http://www.nba.com/data/10s/prod/v1/' + (NBA.currentSeasonYear() - 1) +
     // console.log(Object.keys(schedule.league.standard));
     app.listen(argv.port || argv.p || 8899, () => {
         console.log("Listening on port", (argv.port || argv.p || 8899));
+    });
+    net.get({url: "http://localhost:8899/api/games/20170202/0021600745", nocache: true }, function(err, response) {
+        console.log(err, response);
+        // process.exit();
     });
     // console.log(gamesByDate(new Date()));
 });
