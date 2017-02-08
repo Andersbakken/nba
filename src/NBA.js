@@ -229,7 +229,7 @@ function League()
                 new Team("Golden State Warriors", "GSW", 1610612744),
                 new Team("Los Angeles Clippers", "LAC", 1610612746),
                 new Team("Los Angeles Lakers", "LAL", 1610612747),
-                new Team("Phoenix Suns", "PHO", 1610612756),
+                new Team("Phoenix Suns", "PHX", 1610612756),
                 new Team("Sacramento Kings", "SAC", 1610612758)
             ]),
             new Division("Southwest", [
