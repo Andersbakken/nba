@@ -11,9 +11,10 @@ const fs = require('fs');
 const Net = require('./Net.js');
 const bsearch = require('binary-search');
 const GameParser = require('./GameParser.js');
-var Log = require('./Log.js');
-var log = Log.log;
-var verbose = Log.verbose;
+const Log = require('./Log.js');
+const log = Log.log;
+const verbose = Log.verbose;
+const fatal = Log.fatal;
 Log.init(argv);
 
 const lowerBound = function(haystack, needle, comparator) {
@@ -61,7 +62,7 @@ function gamesByDate(req, res, next) {
     next();
 }
 
-app.get('/api/games/:date', gamesByDate, (req, res, next) => {
+app.get('/api/games/:spec', gamesByDate, (req, res, next) => {
     if (req.games) {
         res.send(JSON.stringify(req.games));
     } else {
@@ -82,64 +83,71 @@ function findGame(req, res, next) {
         return;
     }
 
+    var gameSpec;
+    var gameId = parseInt(req.params.game);
+    if (!gameId) {
+        gameSpec = req.params.game;
+    }
+
     var game;
     for (var i=0; i<req.games.length; ++i) {
-        if (req.games[i].gameId == req.params.gameid) {
+        console.log(i, req.games[i], gameId, gameSpec);
+        if (gameId) {
+            if (req.games[i].gameId == gameId) {
+                game = req.games[i];
+                break;
+            }
+        } else if (gameSpec == `${req.games[i].away}@${req.games[i].home}`) {
             game = req.games[i];
             break;
         }
     }
     if (!game) {
-        next(new Error(`Can't find game ${req.params.gameid}`));
+        next(new Error(`Can't find game ${req.params.game}`));
         return;
     }
 
-    console.log(`requesting game http://localhost:8899/api/games/${req.params.date}/${req.params.gameid}`);
     var quarters = [];
     function getNextQuarter() {
-        var url = `http://data.nba.net/data/10s/prod/v1/${req.params.date}/${req.params.gameid}_pbp_${quarters.length + 1}.json`;
-        net.get(url, function(err, data) {
-            if (err) {
-                next(new Error(err));
-                return;
-            }
+        return net.get(`http://data.nba.net/data/10s/prod/v1/${req.params.date}/${game.gameId}_pbp_${quarters.length + 1}.json`).then(function(data) {
             if (data.statusCode != 200) {
-                next(new Error(`Got ${data.statusCode} for ${url}`));
-                return;
+                throw new Error(`Got ${data.statusCode} for ${data.url}`);
             }
-            var quarterData;
-            try {
-                quarterData = JSON.parse(data.body);
-            } catch (err) {
-                next(new Error(err));
-                return;
+            var quarterData = JSON.parse(data.body);
+            if (!(quarterData.plays instanceof Array)) {
+                throw new Error("Invalid quarter data: " + data.url);
             }
-            if (!quarterData || !(quarterData.plays instanceof Array)) {
-                next(new Error("Invalid quarter data: " + url));
-                return;
+            quarters.push(quarterData);
+
+            var lastPlay = quarterData.plays[quarterData.plays.length - 1];
+            var done = false;
+            if (lastPlay.description != 'End Period') {
+                net.clearCache(data.url);
+                done = true;
+            } else if (quarters.length >= 4 && lastPlay.hTeamScore != lastPlay.vTeamScore) {
+                done = true;
             }
-            if (!quarterData.plays.length) {
-                GameParser.parseQuarters(league, net, { gameData: game, quarters: quarters}, function(error, result) {
-                    if (error) {
-                        next(new Error(error));
-                    } else {
-                        req.game = result;
-                        next();
-                    }
-                });
+            safe.fs.writeFileSync(`/tmp/quarter_${quarters.length}.json`, JSON.stringify(quarterData, undefined, 4));
+            if (done) {
+                return GameParser.parseQuarters(league, net, { gameData: game, quarters: quarters});
             } else {
-                safe.fs.writeFileSync(`/tmp/quarter_${quarters.length + 1}.json`, JSON.stringify(quarterData, undefined, 4));
-                quarters.push(quarterData);
-                getNextQuarter();
+                return getNextQuarter();
             }
         });
     }
-    getNextQuarter();
+    getNextQuarter().then(function(response) {
+        // console.log(Object.keys(response), response instanceof NBA.Game);
+        req.game = response;
+        next();
+    }).catch(function(error) {
+        next(new Error(error));
+    });
 }
 
-app.get('/api/games/:date/:gameid', findGame, (req, res, next) => {
+app.get('/api/games/:date/:game', findGame, (req, res, next) => {
     if (req.game) {
-        res.send(req.game.encode(league));
+        var encoded = req.game.encode(league);
+        res.send(JSON.stringify(encoded));
     } else {
         res.sendStatus(404);
     }
@@ -156,44 +164,39 @@ fs.readdirSync(__dirname + "/www/").forEach((file) => {
     });
 });
 
-net.get('http://www.nba.com/data/10s/prod/v1/' + (NBA.currentSeasonYear() - 1) + '/schedule.json', (error, response) => {
-    if (error) {
-        console.error("Couldn't get schedule", error);
-        process.exit(1);
-        return;
-    }
+var season = NBA.currentSeasonName();
+var all = [ net.get('http://www.nba.com/data/10s/prod/v1/' + (NBA.currentSeasonYear() - 1) + '/schedule.json') ];
+league.forEachTeam(function(team) {
+    all.push(net.get(`http://stats.nba.com/stats/commonteamroster/?TeamId=${team.id}&Season=${season}`));
+});
+
+Promise.all(all).then(function(responses) {
+    var response = responses[0];
     var parsed = safe.JSON.parse(response.body);
     if (!parsed) {
-        console.error("Couldn't parse schedule " + response.url);
+        throw new Error("Couldn't parse schedule " + response.url);
         net.clearCache(response.url);
-        process.exit(1);
-        return;
+        return undefined;
     }
     schedule = parsed.league.standard;
     for (var idx=0; idx<schedule.length; ++idx) {
         schedule[idx].gameTime = new Date(schedule[idx].startTimeUTC);
         gamesById[schedule[idx].gameId] = schedule[idx];
     }
-    // console.log(JSON.stringify(schedule[0], null, 4));
-    // console.log("GOT RESPONSE", error, response);
-    // console.log(response);
-    // console.log(JSON.stringify(schedule, undefined, 4));
-    // process.exit(0);
-    // console.log(Object.keys(schedule.league.standard));
+
+    // console.log("Got responses", responses.length);
+
     app.listen(argv.port || argv.p || 8899, () => {
         console.log("Listening on port", (argv.port || argv.p || 8899));
     });
+
     if (argv["test"]) {
-        net.get({url: "http://localhost:8899/api/games/20170206/0021600770", nocache: true }, function(err, response) {
-            if (err || response.statusCode != 200) {
-                console.log("BAD", response.statusCode, err);
-            } else {
-                var game = NBA.Game.decode(JSON.parse(response.body), league);
-                var box = new NBA.BoxScore(game);
-                box.print();
-            }
+        return net.get({url: "http://localhost:8899/api/games/20170206/0021600770", nocache: true }).then((response) => {
+            var game = NBA.Game.decode(JSON.parse(response.body), league);
+            var box = new NBA.BoxScore(game);
+            box.print();
             process.exit();
         });
     }
-    // console.log(gamesByDate(new Date()));
-});
+    return undefined;
+}).catch(fatal);

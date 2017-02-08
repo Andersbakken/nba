@@ -153,6 +153,12 @@ Division.prototype.find = function(nameOrAbbrev) {
     return ret;
 };
 
+Division.prototype.forEachTeam = function(cb) {
+    for (var team in this.teams) {
+        cb(this.teams[team]);
+    }
+};
+
 // --- Conference ---
 
 function Conference(name, divisions)
@@ -168,6 +174,19 @@ function Conference(name, divisions)
         this.divisions[div.name] = div;
     });
 }
+
+Conference.prototype.forEachDivision = function(cb) {
+    for (var div in this.divisions) {
+        cb(this.divisions[div]);
+    }
+};
+
+Conference.prototype.forEachTeam = function(cb) {
+    this.forEachDivision(function(div) {
+        div.forEachTeam(cb);
+    });
+};
+
 
 Conference.prototype.find = function(nameOrAbbrev) {
     var ret;
@@ -269,6 +288,26 @@ League.prototype.decodeTeam = function(object) {
 
 League.prototype.find = function(nameOrAbbrev) {
     return this.conferences.Eastern.find(nameOrAbbrev) || this.conferences.Western.find(nameOrAbbrev);
+};
+
+League.prototype.forEachConference = function(cb) {
+    for (var conf in this.conferences) {
+        cb(this.conferences[conf]);
+    }
+};
+
+League.prototype.forEachDivision = function(cb) {
+    this.forEachConference(function(conf) {
+        conf.forEachDivision(cb);
+    });
+};
+
+League.prototype.forEachTeam = function(cb) {
+    this.forEachConference(function(conf) {
+        conf.forEachDivision(function(div) {
+            div.forEachTeam(cb);
+        });
+    });
 };
 
 // --- Event ---

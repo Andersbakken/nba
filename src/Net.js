@@ -7,6 +7,8 @@ var Log = require('./Log.js');
 var log = Log.log;
 var verbose = Log.verbose;
 
+console.log("settings", Log.settings);
+
 function Net(options)
 {
     this.options = options;
@@ -24,16 +26,14 @@ function Net(options)
     this.requests = {};
 }
 
-function Request(req, filename, cb) {
+function Request(req, filename, promise) {
     this.req = req;
-    this.callbacks = [cb];
+    this.promises = [promise];
     verbose("Net: Actually requesting", req.url);
     request(req.url, (error, response, body) => {
-        verbose("Net: Got response", response.statusCode);
+        verbose("Net: Got response", response.statusCode, req.url);
         if (error) {
-            this.callbacks.forEach((callback) => {
-                callback(error);
-            });
+            throw new Error("Got error: " + error.toString());
             return;
         }
 
@@ -50,37 +50,38 @@ function Request(req, filename, cb) {
         }
         data.url = req.url;
         data.source = "network";
-        this.callbacks.forEach((callback) => {
-            callback(undefined, data);
+        this.promises.forEach((resolve) => {
+            resolve(data);
         });
     });
 }
 
-Net.prototype.get = function(req, cb) {
-    if (!(req instanceof Object)) {
-        req = { url: req };
-    }
-    var fileName = this.options.cacheDir + encodeURIComponent(req.url);
-    var contents = safe.fs.readFileSync(fileName, 'utf8');
-    if (contents) {
-        var data = safe.JSON.parse(contents);
-        if (!data) { // cache gone bad, repair
-            safe.fs.unlinkSync(fileName);
-            verbose("Net: cache is bad", req.url, fileName);
-        } else {
-            verbose("Net: Cache hit", req.url, fileName);
-            data.url = req.url;
-            data.source = "cache";
-            cb(undefined, data);
-            return;
+Net.prototype.get = function(req) {
+    return new Promise((resolve) => {
+        if (!(req instanceof Object)) {
+            req = { url: req };
         }
-    }
-    if (this.requests[req.url]) {
-        this.requests[req.url].callbacks.push(cb);
-        return;
-    }
+        var fileName = this.options.cacheDir + encodeURIComponent(req.url);
+        var contents = safe.fs.readFileSync(fileName, 'utf8');
+        if (contents) {
+            var data = safe.JSON.parse(contents);
+            if (!data) { // cache gone bad, repair
+                safe.fs.unlinkSync(fileName);
+                verbose("Net: cache is bad", req.url, fileName);
+            } else {
+                verbose("Net: Cache hit", req.url, fileName);
+                data.url = req.url;
+                data.source = "cache";
+                resolve(data);
+                return;
+            }
+        }
+        if (this.requests[req.url]) {
+            this.requests[req.url].promises.push(resolve);
+        }
 
-    this.requests[req.url] = new Request(req, fileName, cb);
+        this.requests[req.url] = new Request(req, fileName, resolve);
+    });
 };
 
 Net.prototype.clearCache = function(url) {

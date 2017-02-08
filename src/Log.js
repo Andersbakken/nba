@@ -1,4 +1,4 @@
-/* global require, module, fs */
+/* global require, module, fs, process */
 
 var safe = require('safetydance');
 var fs = require('fs');
@@ -6,7 +6,7 @@ var CircularJSON = require('circular-json');
 var verbosity, logFile;
 function init(options)
 {
-    verbosity = options.verbose || 0;
+    verbosity = (options.verbose || 0) + (options.v || 0);
     logFile = options["log-file"];
     if (logFile)
         safe.fs.unlinkSync(logFile);
@@ -45,8 +45,20 @@ function verbose()
     appendToLog(arguments);
 }
 
+function fatal()
+{
+    console.log.apply(console, arguments);
+    appendToLog(arguments);
+    process.exit(1);
+}
+
 module.exports = {
     init: init,
     log: log,
-    verbose: verbose
+    verbose: verbose,
+    fatal: fatal,
+    settings: {
+        verbosity: verbosity,
+        logFile: logFile
+    }
 };
