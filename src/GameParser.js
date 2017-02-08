@@ -69,12 +69,16 @@ function parseQuarters(league, net, data, cb) {
         safe.fs.writeFileSync(`/tmp/home.json`, JSON.stringify(homePlayerData, undefined, 4));
         safe.fs.writeFileSync(`/tmp/away.json`, JSON.stringify(awayPlayerData, undefined, 4));
 
+        console.log(away.abbrev, "@", home.abbrev);
         var seenPlayerIds = {};
 
         data.quarters.forEach(function(q) {
             q.plays.forEach(function(play) {
                 if (play.personId)
                     seenPlayerIds[play.personId] = true;
+                // if (/Substitution replaced by/.exec(play.description)) {
+                //     console.log(play.description);
+                // }
             });
         });
 
@@ -114,7 +118,7 @@ function parseQuarters(league, net, data, cb) {
                             break;
                     }
                 }
-                function addPlayer(playerIdOrName, homeOverride) {
+                function addPlayer(playerIdOrName, homeOverride, noWarn) {
                     var name = /^[0-9]*$/.exec(playerIdOrName) ? undefined : playerIdOrName.split(' ');
                     // console.log(name, playerIdOrName);
                     var homePlayer = homeEvent;
@@ -144,7 +148,8 @@ function parseQuarters(league, net, data, cb) {
                             if (!ignoreSeen && !(id in seenPlayerIds))
                                 return true;
                             var playerNames = player[playerDataIndexes.PLAYER].split(' ');
-                            misses.push(player[playerDataIndexes.PLAYER]);
+                            if (!noWarn)
+                                misses.push(player[playerDataIndexes.PLAYER]);
                             // console.log("checking names", name, playerNames);
                             if (name.length == 1) {
                                 // console.log("considering", name[0], playerNames);
@@ -172,6 +177,15 @@ function parseQuarters(league, net, data, cb) {
                     if (!matched) {
                         ignoreSeen = true;
                         forEachPlayer(homePlayer, tryPlayer);
+                        if (!matched && name && name.length > 1) {
+                            name = [name[0]];
+                            ignoreSeen = false;
+                            forEachPlayer(homePlayer, tryPlayer);
+                            if (!matched) {
+                                ignoreSeen = true;
+                                forEachPlayer(homePlayer, tryPlayer);
+                            }
+                        }
                     }
 
                     var ret;
@@ -181,7 +195,7 @@ function parseQuarters(league, net, data, cb) {
                         players[ret.name] = ret;
                         players[ret.id] = ret;
                         players[playerIdOrName] = ret;
-                    } else {
+                    } else if (!noWarn) {
                         console.log("COULDN'T CREATE PLAYER", playerIdOrName, homePlayer, "name", name, "misses", misses, description);
                     }
                     return ret;
@@ -276,7 +290,8 @@ function parseQuarters(league, net, data, cb) {
                 }
 
                 if (/ Technical \(/.exec(description)) {
-                    game.events.push(new NBA.Event(NBA.Event.TF, time, homeEvent ? home : away, addPlayer(play.personId)));
+                    game.events.push(new NBA.Event(NBA.Event.TF, time, homeEvent ? home : away, addPlayer(play.personId, undefined, true)));
+                    // coach, should add some other event thing here
                     return;
                 }
 
