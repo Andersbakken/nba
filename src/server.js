@@ -184,7 +184,7 @@ net.get('http://www.nba.com/data/10s/prod/v1/' + (NBA.currentSeasonYear() - 1) +
         console.log("Listening on port", (argv.port || argv.p || 8899));
     });
     if (argv["test"]) {
-        net.get({url: "http://localhost:8899/api/games/20170206/0021600768", nocache: true }, function(err, response) {
+        net.get({url: "http://localhost:8899/api/games/20170206/0021600770", nocache: true }, function(err, response) {
             if (err || response.statusCode != 200) {
                 console.log("BAD", response.statusCode, err);
             } else {

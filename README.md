@@ -15,3 +15,7 @@ NBA!
 ```
 // curl -v http://data.nba.net/data/10s/prod/v1/20170131/0021600727_pbp_3.json | json_pp
 ```
+
+check here for stats docs:
+
+https://github.com/seemethere/nba_py/wiki/stats.nba.com-Endpoint-Documentation
