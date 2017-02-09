@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-/*global require, __dirname */
+/*global require, __dirname, setTimeout */
 const argv = require('yargs').usage("Usage: %0 --game [arg] --max-time [time] --log-file [file] --verbose").argv;
 
 const NBA = require('./NBA.js');
@@ -39,6 +39,7 @@ var net = new Net({cacheDir: (argv.cacheDir || __dirname + "/cache/") });
 
 // curl -v http://localhost:8899/api/games/list/20170129
 function gamesByDate(req, res, next) {
+    // console.log(req.params);
     var date = new Date(parseInt(req.params.date.substr(0, 4)),
                         parseInt(req.params.date.substr(4, 2)) - 1,
                         parseInt(req.params.date.substr(6)));
@@ -62,7 +63,7 @@ function gamesByDate(req, res, next) {
     next();
 }
 
-app.get('/api/games/:spec', gamesByDate, (req, res, next) => {
+app.get('/api/games/:date', gamesByDate, (req, res, next) => {
     if (req.games) {
         res.send(JSON.stringify(req.games));
     } else {
@@ -91,7 +92,6 @@ function findGame(req, res, next) {
 
     var game;
     for (var i=0; i<req.games.length; ++i) {
-        console.log(i, req.games[i], gameId, gameSpec);
         if (gameId) {
             if (req.games[i].gameId == gameId) {
                 game = req.games[i];
@@ -140,7 +140,8 @@ function findGame(req, res, next) {
         req.game = response;
         next();
     }).catch(function(error) {
-        next(new Error(error));
+        console.log("Got error", error);
+        // next(new Error(error));
     });
 }
 
@@ -164,20 +165,70 @@ fs.readdirSync(__dirname + "/www/").forEach((file) => {
     });
 });
 
-var season = NBA.currentSeasonName();
-var all = [ net.get('http://www.nba.com/data/10s/prod/v1/' + (NBA.currentSeasonYear() - 1) + '/schedule.json') ];
-league.forEachTeam(function(team) {
-    all.push(net.get(`http://stats.nba.com/stats/commonteamroster/?TeamId=${team.id}&Season=${season}`));
-});
+var season = NBA.currentSeasonName(); // ### The server has to restart between seasons
+function refreshPlayerCache()
+{
+    function work(resolve) {
+        net.get({url: `http://stats.nba.com/stats/commonallplayers/?LeagueId=00&Season=${season}&IsOnlyCurrentSeason=1`, validate: league.players != undefined })
+            .then(function(result) {
+                if (result.statusCode == 200) {
+                    var start = resolve && !league.players;
+                    league.players = {};
+                    if (!start) {
+                        league.forEachTeam(function(team) {
+                            team.players = {};
+                        });
+                    }
+                    var data = JSON.parse(result.body);
+                    var resultSet0 = data.resultSets[0];
+                    var indexes = {};
+                    for (var i=0; i<resultSet0.headers.length; ++i) {
+                        indexes[resultSet0.headers[i]] = i;
+                    }
+                    resultSet0.rowSet.forEach((player) => {
+                        var p = new NBA.Player(player[indexes.DISPLAY_LAST_COMMA_FIRST], player[indexes.PERSON_ID]);
+                        league.players[p.id] = p;
+                        var team = player[indexes.TEAM_ABBREVIATION];
+                        if (team)
+                            league.find(team).players[p.id] = p;
+
+                    });
+                    // console.log(`GOT ${Object.keys(league.players).length} PLAYERS`);
+                    safe.fs.writeFileSync(`/tmp/allplayers.json`, JSON.stringify(JSON.parse(result.body), undefined, 4));
+                    if (start)
+                        resolve();
+                } else if (result.statusCode == 304) {
+                    verbose("validated players");
+                } else {
+                    console.log("Can't get commonallplayers");
+                }
+                // setTimeout(refreshPlayerCache, 5 * 60 * 1000);
+                setTimeout(work, 60 * 60000); // refresh every hour
+            });
+
+    }
+    return new Promise(function(resolve) { work(resolve); });
+}
+
+var all = [
+    net.get('http://www.nba.com/data/10s/prod/v1/' + (NBA.currentSeasonYear() - 1) + '/schedule.json'),
+    refreshPlayerCache()
+];
+// league.forEachTeam(function(team) {
+//     all.push(net.get(`http://stats.nba.com/stats/commonteamroster/?TeamId=${team.id}&Season=${season}`));
+// });
 
 Promise.all(all).then(function(responses) {
     var response = responses[0];
     var parsed = safe.JSON.parse(response.body);
+
     if (!parsed) {
         throw new Error("Couldn't parse schedule " + response.url);
         net.clearCache(response.url);
         return undefined;
     }
+    safe.fs.writeFileSync("/tmp/schedule.json", JSON.stringify(parsed, undefined, 4));
+
     schedule = parsed.league.standard;
     for (var idx=0; idx<schedule.length; ++idx) {
         schedule[idx].gameTime = new Date(schedule[idx].startTimeUTC);
@@ -192,6 +243,8 @@ Promise.all(all).then(function(responses) {
 
     if (argv["test"]) {
         return net.get({url: "http://localhost:8899/api/games/20170206/0021600770", nocache: true }).then((response) => {
+            safe.fs.writeFileSync("/tmp/game.json", response.body);
+            safe.fs.writeFileSync("/tmp/game.pretty.json", JSON.stringify(JSON.parse(response.body), null, 4));
             var game = NBA.Game.decode(JSON.parse(response.body), league);
             var box = new NBA.BoxScore(game);
             box.print();

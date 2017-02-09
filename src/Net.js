@@ -7,7 +7,7 @@ var Log = require('./Log.js');
 var log = Log.log;
 var verbose = Log.verbose;
 
-console.log("settings", Log.settings);
+// console.log("settings", Log.settings);
 
 function Net(options)
 {
@@ -26,19 +26,24 @@ function Net(options)
     this.requests = {};
 }
 
-function Request(req, filename, promise) {
+function Request(req, headers, filename, promise) {
     this.req = req;
     this.promises = [promise];
-    verbose("Net: Actually requesting", req.url);
-    request(req.url, (error, response, body) => {
+
+    var options = {
+        url: req.url,
+        headers: headers
+    };
+
+    verbose("Net: Actually requesting", JSON.stringify(options));
+
+    request(options, (error, response, body) => {
         verbose("Net: Got response", response.statusCode, req.url);
         if (error) {
             throw new Error("Got error: " + error.toString());
             return;
         }
 
-        // console.log(response);
-        // console.log(body);
         var data = {
             headers: response.headers,
             body: body,
@@ -63,6 +68,7 @@ Net.prototype.get = function(req) {
         }
         var fileName = this.options.cacheDir + encodeURIComponent(req.url);
         var contents = safe.fs.readFileSync(fileName, 'utf8');
+        var headers = {};
         if (contents) {
             var data = safe.JSON.parse(contents);
             if (!data) { // cache gone bad, repair
@@ -70,17 +76,21 @@ Net.prototype.get = function(req) {
                 verbose("Net: cache is bad", req.url, fileName);
             } else {
                 verbose("Net: Cache hit", req.url, fileName);
-                data.url = req.url;
-                data.source = "cache";
-                resolve(data);
-                return;
+                if (req.validate) {
+                    headers["If-Modified-Since"] = data.headers["Last-Modified"] || data.headers["last-modified"];
+                } else {
+                    data.url = req.url;
+                    data.source = "cache";
+                    resolve(data);
+                    return;
+                }
             }
         }
         if (this.requests[req.url]) {
             this.requests[req.url].promises.push(resolve);
         }
 
-        this.requests[req.url] = new Request(req, fileName, resolve);
+        this.requests[req.url] = new Request(req, headers, fileName, resolve);
     });
 };
 

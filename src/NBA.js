@@ -96,17 +96,27 @@ Time.quarterEnd = function(idx) {
 
 function Player(name, id)
 {
-    this.name = name;
+    var comma = name.lastIndexOf(', ');
+    if (comma == -1) {
+        this.names = [name];
+    } else {
+        this.names = [ name.substr(comma + 2), name.substr(0, comma) ];
+    }
     this.id = id;
     this.toString = function() { return this.name; }; // return `Player(${this.name}, ${this.id})`; };
 }
 
-Player.prototype.encode = function() {
-    return { name: this.name, id: this.id };
+Player.prototype =  {
+    get name() {
+        return this.names.join(' ');
+    },
+    encode: function() {
+        return { names: this.names, id: this.id };
+    }
 };
 
 Player.decode = function(data) {
-    return new Player(data.name, data.id);
+    return new Player(data.names, data.id);
 };
 
 // --- Team ---
@@ -117,11 +127,11 @@ function Team(name, abbrev, id)
     this.abbrev = abbrev;
     this.division = undefined;
     this.conference = undefined;
+    this.players = {};
     this.id = id;
     var date = new Date();
     var year = date.getMonth() >= 9 ? (date.getYear() + 1) : date.getYear();
     this.link = `http://www.basketball-reference.com/teams/${abbrev}/${year}.html`;
-    this.players = {};
 }
 
 // --- Division ---
@@ -130,6 +140,7 @@ function Division(name, teams)
 {
     this.name = name;
     this.conference = undefined;
+    this.league = undefined;
     this.teams = {};
     teams.forEach((team) => {
         team.division = this;
@@ -161,12 +172,14 @@ Division.prototype.forEachTeam = function(cb) {
 
 // --- Conference ---
 
-function Conference(name, divisions)
+function Conference(league, name, divisions)
 {
     this.name = name;
+    this.league = league;
     this.divisions = {};
     divisions.forEach((div) => {
         div.conference = this;
+        div.league = league;
         for (var teamName in div.teams) {
             var team = div.teams[teamName];
             team.conference = this;
@@ -213,7 +226,7 @@ Conference.prototype.team = function(name) {
 function League()
 {
     this.conferences = {
-        "Eastern": new Conference("Eastern", [
+        "Eastern": new Conference(this, "Eastern", [
             new Division("Atlantic", [
                 new Team("Boston Celtics", "BOS", 1610612738),
                 new Team("Brooklyn Nets", "BKN", 1610612751),
@@ -236,7 +249,7 @@ function League()
                 new Team("Washington Wizards", "WAS", 1610612764)
             ]),
         ]),
-        "Western": new Conference("Western", [
+        "Western": new Conference(this, "Western", [
             new Division("Northwest", [
                 new Team("Denver Nuggets", "DEN", 1610612743),
                 new Team("Minnesota Timberwolves", "MIN", 1610612750),
@@ -260,6 +273,7 @@ function League()
             ])
         ])
     };
+    this.players = undefined; // need to stay undefined, look at refreshPlayerCache
 }
 
 League.prototype.encodeTeam = function(team) {
@@ -382,12 +396,23 @@ function Game(home, away)
     this.home = home;
     this.away = away;
     this.events = [];
+    this.homePlayers = {};
+    this.awayPlayers = {};
 }
 Game.decode = function(object, league) {
-    var home = league.decodeTeam(object.home);
-    var away = league.decodeTeam(object.away);
+    var home = league.find(object.home);
+    var away = league.find(object.away);
     var ret = new Game(home, away);
     ret.events = object.events.map((event) => { return ret.decodeEvent(event); });
+    object.homePlayers.forEach((player) => {
+        var p = Player.decode(player);
+        ret.homePlayers[p.id] = p;
+    });
+    object.awayPlayers.forEach((player) => {
+        var p = Player.decode(player);
+        ret.awayPlayers[p.id] = p;
+    });
+
     return ret;
 };
 Game.prototype = {
@@ -396,10 +421,18 @@ Game.prototype = {
     },
     encode: function(league) {
         var ret = {
-            home: league.encodeTeam(this.home),
-            away: league.encodeTeam(this.away),
+            home: this.home.name,
+            away: this.away.name,
             events: this.events.map((event) => { return this.encodeEvent(event); })
         };
+
+        ["homePlayers", "awayPlayers"].forEach((key) => {
+            ret[key] = [];
+            for (var id in this[key]) {
+                ret[key].push(this[key][id].encode());
+            }
+        });
+
         return ret;
     },
 
@@ -446,15 +479,11 @@ function BoxScore(game, maxTime)
     this.homePlayers = [];
 
     var player, p;
-    // var curry;
     for (player in game.away.players) {
         p = game.away.players[player];
-        // if (p.name == "Stephen Curry")
-        //     curry = p;
         this.players[player] = values();
         this.awayPlayers.push(p);
     }
-    // assert(curry != undefined);
 
     for (player in game.home.players) {
         p = game.home.players[player];
@@ -522,19 +551,10 @@ function BoxScore(game, maxTime)
                 assert(Object.keys(lineup).length == 5, "lineup size wrong: " + Object.keys(lineup));
                 assert(Object.keys(otherLineup).length == 5, "other lineup size wrong: " + Object.keys(otherLineup));
                 var id;
-                for (id in lineup) {
+                for (id in lineup)
                     this.players[id][Event.PLUSMINUS] += pts;
-                    // if (id == curry.id) {
-                    //     console.log("curry gets", pts, "for", ev.toString());
-                    // }
-                }
-
-                for (id in otherLineup) {
+                for (id in otherLineup)
                     this.players[id][Event.PLUSMINUS] -= pts;
-                    // if (id == curry.id) {
-                    //     console.log("curry gets", -pts, "for", ev.toString());
-                    // }
-                }
             }
         }
     }
@@ -617,7 +637,7 @@ BoxScore.prototype.print = function() {
         var stats = (team == that.game.home ? that.homeStats : that.awayStats);
         console.log(team.name + " - " + stats[Event.PTS]);
         console.log("----------------------------------------------------------------------------------------------------------------------------------------------");
-        console.log("Player                   MIN   FGM   FGA   FG%   3PM   3PA   3P%   FTM   FTA   FT%   ORB   DRB   TRB   AST   STL   BLK   TOV    PF   PTS   +/-");
+        console.log("Player                   MIN   PTS   FGM   FGA   FG%   3PM   3PA   3P%   FTM   FTA   FT%   ORB   DRB   TRB   AST   STL   BLK   TOV    PF   +/-");
         console.log("----------------------------------------------------------------------------------------------------------------------------------------------");
 
         var sorted = players.sort(function(l, r) {
@@ -630,6 +650,7 @@ BoxScore.prototype.print = function() {
         function formatLine(name, stats) {
             var str = pad(name, 22);
             str += pad((new Time(stats[Event.MINUTES])).mmss(), 6);
+            str += pad(stats[Event.PTS], 6);
             str += pad(stats[Event.FGM2] + stats[Event.FGM3], 6);
             str += pad(stats[Event.FGA2] + stats[Event.FGA3], 6);
             str += percentage(stats[Event.FGM2] + stats[Event.FGM3], stats[Event.FGA2] + stats[Event.FGA3]);
@@ -647,7 +668,6 @@ BoxScore.prototype.print = function() {
             str += pad(stats[Event.BLK], 6);
             str += pad(stats[Event.TO], 6);
             str += pad(stats[Event.PF], 6);
-            str += pad(stats[Event.PTS], 6);
             str += pad(stats[Event.PLUSMINUS], 6);
 
             console.log(str);
