@@ -83,11 +83,9 @@ function parseQuarters(league, net, data) {
                         return cacheByName[playerIdOrName];
 
                     var team = homePlayer ? game.home : game.away;
-                    function find(name, seenOnly) {
-                        for (var id in team.players) {
-                            if (seenOnly && !(id in teamPlayers))
-                                continue;
-                            var player = team.players[id];
+                    function find(name) {
+                        function match(player)
+                        {
                             // console.log(player.name, player.toString());
                             var playerNames = player.name.split(' ');
                             if (playerNames.length >= name.length) {
@@ -100,13 +98,30 @@ function parseQuarters(league, net, data) {
                                     }
                                 }
                             }
+                            return undefined;
                         }
+
+                        var id, ret;
+                        // first try players we know have appeared in the game
+                        for (id in teamPlayers) {
+                            ret = match(teamPlayers[id]);
+                            if (ret)
+                                return ret;
+                        }
+
+                        // try players that are on the squad, should probably get a box score thing for the actual game and use that instead
+                        for (id in team.players) {
+                            ret = match(team.players[id]);
+                            if (ret)
+                                return ret;
+                        }
+
                         return undefined;
                     }
-                    var ret = find(name, true) || find(name, false);
+                    var ret = find(name);
                     if (!ret && name.length > 1) {
                         var firstLast = [name[0]];
-                        ret = find(firstLast, true) || find(firstLast, false);
+                        ret = find(firstLast);
                     }
                     if (ret) {
                         cacheByName[playerIdOrName] = ret;

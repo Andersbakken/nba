@@ -146,6 +146,7 @@ function findGame(req, res, next) {
 }
 
 app.get('/api/games/:date/:game', findGame, (req, res, next) => {
+    verbose("Requested", req.url);
     if (req.game) {
         var encoded = req.game.encode(league);
         res.send(JSON.stringify(encoded));
@@ -242,6 +243,7 @@ Promise.all(all).then(function(responses) {
     });
 
     if (argv["test"]) {
+        // /api/games/20170204/0021600758 doesn't work
         return net.get({url: "http://localhost:8899/api/games/20170206/0021600770", nocache: true }).then((response) => {
             safe.fs.writeFileSync("/tmp/game.json", response.body);
             safe.fs.writeFileSync("/tmp/game.pretty.json", JSON.stringify(JSON.parse(response.body), null, 4));
