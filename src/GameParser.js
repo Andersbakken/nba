@@ -1,8 +1,12 @@
 /* global require, module */
 
-const NBA = require('./NBA.js');
+2const NBA = require('./NBA.js');
 const assert = require('assert');
 const safe = require('safetydance');
+
+// http://data.nba.net/data/10s/prod/v1/20170209/0021600798_boxscore.json
+// is available while the game is going on and can be used to
+// determine what personId's are in the game.
 
 function parseQuarters(league, net, data) {
     return new Promise(function(resolve) {
