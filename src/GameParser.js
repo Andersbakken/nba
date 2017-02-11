@@ -1,12 +1,14 @@
 /* global require, module */
 
-2const NBA = require('./NBA.js');
+const NBA = require('./NBA.js');
 const assert = require('assert');
 const safe = require('safetydance');
 
 // http://data.nba.net/data/10s/prod/v1/20170209/0021600798_boxscore.json
 // is available while the game is going on and can be used to
 // determine what personId's are in the game.
+
+var debugLineups = true;
 
 function parseQuarters(league, net, data) {
     return new Promise(function(resolve) {
@@ -292,7 +294,7 @@ function parseQuarters(league, net, data) {
         var homeLineup = {};
         var awayLineup = {};
 
-        function dumpLineups()
+        function dumpLineups(header)
         {
             var hh = [];
             for (var h in homeLineup) {
@@ -304,7 +306,7 @@ function parseQuarters(league, net, data) {
             for (var a in awayLineup) {
                 aa.push(away.players[a].name);
             }
-            console.log("home", hh, "away", aa);
+            console.log((header || ""), "home", hh, "away", aa);
         }
         quarter = undefined;
         var subs = [];
@@ -313,9 +315,11 @@ function parseQuarters(league, net, data) {
                 quarter = ev.data;
                 homeLineup = {};
                 awayLineup = {};
-                // console.log("resetting lineup");
+                if (debugLineups)
+                    console.log("resetting lineup");
             } else if (ev.type == NBA.Event.QUARTER_END) {
-                // dumpLineups();
+                if (debugLineups)
+                    dumpLineups("quarter end " + quarter);
                 var playerId;
                 for (playerId in homeLineup) {
                     // console.log(game.home.players[playerId].name + " is in the game, subbing out for " + ev.data + " " + playerId);
@@ -333,24 +337,30 @@ function parseQuarters(league, net, data) {
                 var lineup = ev.team === game.home ? homeLineup : awayLineup;
                 if (ev.type == NBA.Event.SUBBED_IN) {
                     lineup[ev.data.id] = true;
-                    // console.log("subbing adding", ev.toString());
-                    // dumpLineups();
+                    if (debugLineups) {
+                        console.log("subbing adding", ev.toString());
+                        dumpLineups();
+                    }
                     assert(Object.keys(lineup).length <= 5, "Too many players");
                 } else {
                     if (!lineup[ev.data.id]) {
                         subs.push(new NBA.Event(NBA.Event.SUBBED_IN, NBA.Time.quarterStart(quarter), ev.team, ev.data));
                         // game.events.splice(lastQuarterStart, 0, new
                         lineup[ev.data.id] = true;
-                        // console.log("other adding", ev.toString());
-                        // dumpLineups();
+                        if (debugLineups) {
+                            console.log("other adding", ev.toString());
+                            dumpLineups();
+                        }
                         assert(Object.keys(lineup).length <= 5, "Too many players");
                     }
 
                     if (ev.type == NBA.Event.SUBBED_OUT) {
                         assert(ev.data.id in lineup, "subbed out not in lineup");
                         delete lineup[ev.data.id];
-                        // console.log("removing", ev.toString());
-                        // dumpLineups();
+                        if (debugLineups) {
+                            console.log("removing", ev.toString());
+                            dumpLineups();
+                        }
                     }
                 }
             }

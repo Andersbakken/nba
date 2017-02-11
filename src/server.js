@@ -8,6 +8,7 @@ const process = require('process');
 const safe = require('safetydance');
 const express = require('express');
 const fs = require('fs');
+const clone = require('clone');
 const Net = require('./Net.js');
 const bsearch = require('binary-search');
 const GameParser = require('./GameParser.js');
@@ -37,6 +38,19 @@ var league = new NBA.League;
 var app = express();
 var net = new Net({cacheDir: (argv.cacheDir || __dirname + "/cache/") });
 
+var host = `localhost:${argv.port}`;
+function formatGame(game)
+{
+    var match = /^(.*)\/([A-Z][A-Z][A-Z])([A-Z][A-Z][A-Z])$/.exec(game.gameUrlCode);
+    return {
+        home: match[3],
+        away: match[2],
+        gameId: game.gameId,
+        gameTime: game.gameTime,
+        url: `http://${host}/api/games/${match[1]}/${game.gameId}`
+    };
+}
+
 // curl -v http://localhost:8899/api/games/list/20170129
 function gamesByDate(req, res, next) {
     // console.log(req.params);
@@ -56,8 +70,7 @@ function gamesByDate(req, res, next) {
     req.games = [];
     if (idx < schedule.length) {
         do {
-            var teams = /([A-Z][A-Z][A-Z])([A-Z][A-Z][A-Z])$/.exec(schedule[idx].gameUrlCode);
-            req.games.push({ home: teams[2], away: teams[1], gameId: schedule[idx].gameId, gameTime: schedule[idx].gameTime });
+            req.games.push(formatGame(schedule[idx]));
         } while (++idx < schedule.length && schedule[idx].gameTime.getDate() == date.getDate());
     }
     next();
@@ -155,6 +168,39 @@ app.get('/api/games/:date/:game', findGame, (req, res, next) => {
     }
 });
 
+function findGameAll(req, res, next)
+{
+    var gameId = parseInt(req.params.spec);
+    var ret = [];
+    // console.log(gameId, req.params.spec);
+    if (!gameId) {
+        schedule.forEach((game) => {
+            var match = /([A-Z][A-Z][A-Z])([A-Z][A-Z][A-Z])$/.exec(game.gameUrlCode);
+            // console.log(`${match[1]}@${match[2]}`, req.params.spec);
+            if (`${match[1]}@${match[2]}` == req.params.spec)
+                ret.push(game);
+        });
+    } else {
+        schedule.forEach((game) => {
+            if (gameId == game.gameId) {
+                ret.push(game);
+            }
+        });
+    }
+    req.games = ret;
+    next();
+}
+
+app.get('/api/findgames/:spec', findGameAll, (req, res, next) => {
+    // verbose("Requested", req.url);
+    if (req.games) {
+        res.send(JSON.stringify(req.games.map(formatGame)));
+    } else {
+        res.sendStatus(404);
+    }
+});
+
+
 app.get("/", (req, res) => {
     res.redirect("/index.html");
 });
@@ -244,7 +290,7 @@ Promise.all(all).then(function(responses) {
 
     if (argv["test"]) {
         // /api/games/20170204/0021600758 doesn't work
-        return net.get({url: "http://localhost:8899/api/games/20170206/0021600770", nocache: true }).then((response) => {
+        return net.get({url: "http://localhost:8899/api/games/20170204/0021600758", nocache: true }).then((response) => {
             safe.fs.writeFileSync("/tmp/game.json", response.body);
             safe.fs.writeFileSync("/tmp/game.pretty.json", JSON.stringify(JSON.parse(response.body), null, 4));
             var game = NBA.Game.decode(JSON.parse(response.body), league);
