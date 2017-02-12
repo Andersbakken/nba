@@ -18,6 +18,8 @@ const verbose = Log.verbose;
 const fatal = Log.fatal;
 Log.init(argv);
 
+const port = argv.port || argv.p || 8899;
+
 const lowerBound = function(haystack, needle, comparator) {
     var idx = bsearch(haystack, needle, comparator);
     if (idx < 0) {
@@ -38,7 +40,7 @@ var league = new NBA.League;
 var app = express();
 var net = new Net({cacheDir: (argv.cacheDir || __dirname + "/cache/") });
 
-var host = `localhost:${argv.port}`;
+var host = `localhost:${port}`;
 function formatGame(game)
 {
     var match = /^(.*)\/([A-Z][A-Z][A-Z])([A-Z][A-Z][A-Z])$/.exec(game.gameUrlCode);
@@ -78,7 +80,7 @@ function gamesByDate(req, res, next) {
 
 app.get('/api/games/:date', gamesByDate, (req, res, next) => {
     if (req.games) {
-        res.send(JSON.stringify(req.games));
+        res.send(JSON.stringify(req.games) + "\n");
     } else {
         res.sendStatus(404);
     }
@@ -162,44 +164,52 @@ app.get('/api/games/:date/:game', findGame, (req, res, next) => {
     verbose("Requested", req.url);
     if (req.game) {
         var encoded = req.game.encode(league);
-        res.send(JSON.stringify(encoded));
+        res.send(JSON.stringify(encoded) + "\n");
     } else {
         res.sendStatus(404);
     }
 });
 
-function findGameAll(req, res, next)
+function query(req, res, next)
 {
-    var gameId = parseInt(req.params.spec);
+    var id = parseInt(req.params.spec);
     var ret = [];
     // console.log(gameId, req.params.spec);
-    if (!gameId) {
+    if (!id) {
         schedule.forEach((game) => {
             var match = /([A-Z][A-Z][A-Z])([A-Z][A-Z][A-Z])$/.exec(game.gameUrlCode);
             // console.log(`${match[1]}@${match[2]}`, req.params.spec);
             if (`${match[1]}@${match[2]}` == req.params.spec)
-                ret.push(game);
+                ret.push(formatGame(game));
         });
     } else {
         schedule.forEach((game) => {
-            if (gameId == game.gameId) {
-                ret.push(game);
+            if (id == game.gameId) {
+                ret.push(formatGame(game));
             }
         });
+        var p = league.players[id];
+        if (p)
+            ret.push(p.encode());
     }
-    req.games = ret;
+
+    var t = league.find(req.params.spec);
+    if (t)
+        ret.push(league.encodeTeam(t));
+    req.matches = ret;
     next();
 }
 
-app.get('/api/findgames/:spec', findGameAll, (req, res, next) => {
+app.get('/api/query/:spec', query, (req, res, next) => {
     // verbose("Requested", req.url);
-    if (req.games) {
-        res.send(JSON.stringify(req.games.map(formatGame)));
+    if (req.matches.length == 1) {
+        res.send(JSON.stringify(req.matches[0]) + "\n");
+    } else if (req.matches.length > 1) {
+        res.send(JSON.stringify(req.matches) + "\n");
     } else {
         res.sendStatus(404);
     }
 });
-
 
 app.get("/", (req, res) => {
     res.redirect("/index.html");
@@ -284,7 +294,7 @@ Promise.all(all).then(function(responses) {
 
     // console.log("Got responses", responses.length);
 
-    app.listen(argv.port || argv.p || 8899, () => {
+    app.listen(port, () => {
         console.log("Listening on port", (argv.port || argv.p || 8899));
     });
 

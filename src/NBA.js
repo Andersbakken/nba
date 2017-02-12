@@ -148,18 +148,16 @@ function Division(name, teams)
     });
 }
 
-Division.prototype.find = function(nameOrAbbrev) {
-    var ret;
-    if (/^[A-Z][A-Z][A-Z]$/.exec(nameOrAbbrev)) {
+Division.prototype.find = function(key) { // key is abbrev, id or full name
+    var ret = this.teams[key];
+    if (!ret) {
         for (var teamName in this.teams) {
             var t = this.teams[teamName];
-            if (t.abbrev == nameOrAbbrev) {
+            if (t.abbrev == key || t.id == key) {
                 ret = t;
                 break;
             }
         }
-    } else {
-        ret = this.teams[nameOrAbbrev];
     }
     return ret;
 };
@@ -201,10 +199,10 @@ Conference.prototype.forEachTeam = function(cb) {
 };
 
 
-Conference.prototype.find = function(nameOrAbbrev) {
+Conference.prototype.find = function(key) {
     var ret;
     for (var div in this.divisions) {
-        ret = this.divisions[div].find(nameOrAbbrev);
+        ret = this.divisions[div].find(key);
         if (ret)
             break;
     }
@@ -279,11 +277,15 @@ function League()
 League.prototype.encodeTeam = function(team) {
     var ret = {
         name: team.name,
-        players: []
+        id: team.id
     };
+    var players = [];
     for (var playerId in team.players) {
-        ret.players.push(team.players[playerId].encode());
+        players.push(team.players[playerId].encode());
     }
+    if (players.length)
+        ret.players = players;
+
     return ret;
 };
 League.prototype.decodeTeam = function(object) {
@@ -300,8 +302,8 @@ League.prototype.decodeTeam = function(object) {
     return team;
 };
 
-League.prototype.find = function(nameOrAbbrev) {
-    return this.conferences.Eastern.find(nameOrAbbrev) || this.conferences.Western.find(nameOrAbbrev);
+League.prototype.find = function(key) {
+    return this.conferences.Eastern.find(key) || this.conferences.Western.find(key);
 };
 
 League.prototype.forEachConference = function(cb) {
