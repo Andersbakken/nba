@@ -405,15 +405,20 @@ Game.decode = function(object, league) {
     var home = league.find(object.home);
     var away = league.find(object.away);
     var ret = new Game(home, away);
-    ret.events = object.events.map((event) => { return ret.decodeEvent(event); });
+    league.players = {};
     object.homePlayers.forEach((player) => {
         var p = Player.decode(player);
+        // console.log("player", player, "p", p);
+        league.players[p.id] = p;
         ret.homePlayers[p.id] = p;
     });
     object.awayPlayers.forEach((player) => {
         var p = Player.decode(player);
+        league.players[p.id] = p;
         ret.awayPlayers[p.id] = p;
     });
+
+    ret.events = object.events.map((event) => { return ret.decodeEvent(league, event); });
 
     return ret;
 };
@@ -453,12 +458,12 @@ Game.prototype = {
         }
         return ret;
     },
-    decodeEvent: function(object) {
+    decodeEvent: function(league, object) {
         var data;
         var team = object.team === this.home.id ? this.home : this.away;
         if (object.data instanceof Object) {
             if (object.data.player) {
-                data = team.players[object.data.player];
+                data = league.players[object.data.player];
             }
         } else {
             data = object.data;
@@ -469,7 +474,7 @@ Game.prototype = {
 
 // --- BoxScore ---
 
-function BoxScore(game, maxTime)
+function BoxScore(game, league, maxTime)
 {
     function values() { var ret = []; ret[Event.numEvents - 1] = 0; ret.fill(0, 0, Event.numEvents - 1); return ret; }
 
@@ -481,13 +486,13 @@ function BoxScore(game, maxTime)
     this.homePlayers = [];
 
     var player, p;
-    for (player in game.away.players) {
-        p = game.away.players[player];
+    for (player in game.awayPlayers) {
+        p = game.awayPlayers[player];
         this.players[player] = values();
         this.awayPlayers.push(p);
     }
 
-    for (player in game.home.players) {
+    for (player in game.homePlayers) {
         p = game.home.players[player];
         this.players[player] = values();
         this.homePlayers.push(p);
@@ -499,6 +504,7 @@ function BoxScore(game, maxTime)
     var expired = false;
     for (var i=0; i<game.events.length; ++i) {
         var ev = game.events[i];
+
         if (!expired && maxTime && ev.time.value > maxTime.value)
             expired = true;
         if (ev.type == Event.QUARTER_START) {

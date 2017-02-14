@@ -304,7 +304,7 @@ Promise.all(all).then(function(responses) {
             safe.fs.writeFileSync("/tmp/game.json", response.body);
             safe.fs.writeFileSync("/tmp/game.pretty.json", JSON.stringify(JSON.parse(response.body), null, 4));
             var game = NBA.Game.decode(JSON.parse(response.body), league);
-            var box = new NBA.BoxScore(game);
+            var box = new NBA.BoxScore(game, league);
             box.print();
             process.exit();
         });

@@ -39,7 +39,7 @@ window.selectGame = function(idx)
 
 function renderBoxScore(maxTime)
 {
-    var box = new NBA.BoxScore(currentGame, maxTime);
+    var box = new NBA.BoxScore(currentGame, league, maxTime);
     // document.getElementById('boxscore').innerHTML = '<pre>' + box.print() + '</pre>';
     // gamesList = result;
     // // console.log(games.innerHtml);
