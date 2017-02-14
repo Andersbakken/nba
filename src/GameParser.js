@@ -65,9 +65,10 @@ function parseQuarters(league, net, data) {
                     return;
                 }
                 var time = NBA.Time.quarterEnd(quarter);
-                var timeLeft = play.clock.split(':');
-                time.add(-(parseInt(timeLeft[0]) * 60 * 1000));
-                time.add(-(parseInt(timeLeft[1]) * 1000));
+                var timeLeft = /^([0-9][0-9]?):([0-9][0-9])\.?([0-9]*)/.exec(play.clock);
+                time.add(-(parseInt(timeLeft[1]) * 60 * 1000));
+                time.add(-(parseInt(timeLeft[2]) * 1000));
+                time.add(-(parseInt(timeLeft[3])));
                 // console.log(match[1], time.mmss(), description);
                 var homeEvent = match[1] == home.abbrev;
                 assert(homeEvent || match[1] == away.abbrev, "event wrong");
