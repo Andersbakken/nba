@@ -493,7 +493,7 @@ function BoxScore(game, league, maxTime)
     }
 
     for (player in game.homePlayers) {
-        p = game.home.players[player];
+        p = game.homePlayers[player];
         this.players[player] = values();
         this.homePlayers.push(p);
     }
