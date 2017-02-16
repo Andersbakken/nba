@@ -536,7 +536,7 @@ function BoxScore(game, league, maxTime)
             for (let jj in lineup) {
                 dump.push(league.players[jj].toString());
             }
-            // console.log("got event", i, game.events.length, ev.toString(), dump);
+            // console.log("got event", i, game.events.length, ev.toString(), JSON.stringify(dump));
 
             lineup[ev.data.id] = ev.time;
             if (quarter == 0)
@@ -551,6 +551,7 @@ function BoxScore(game, league, maxTime)
                     console.log(league.players[jj].toString());
                 }
                 console.log(Object.keys(lineup));
+                break;
             }
             var start = lineup[ev.data.id].value;
 
@@ -558,7 +559,7 @@ function BoxScore(game, league, maxTime)
             for (let jj in lineup) {
                 dump.push(league.players[jj].toString());
             }
-            // console.log("got event", i, game.events.length, ev.toString(), dump);
+            // console.log("got event", i, game.events.length, ev.toString(), JSON.stringify(dump));
 
             var end = ev.time.value;
             if (maxTime) {
@@ -673,9 +674,9 @@ BoxScore.prototype.print = function() {
     function formatTeam(team, players) {
         var stats = (team == that.game.home ? that.homeStats : that.awayStats);
         console.log(team.name + " - " + stats[Event.PTS]);
-        console.log("----------------------------------------------------------------------------------------------------------------------------------------------");
-        console.log("Player                   MIN   PTS   FGM   FGA   FG%   3PM   3PA   3P%   FTM   FTA   FT%   ORB   DRB   TRB   AST   STL   BLK   TOV    PF   +/-");
-        console.log("----------------------------------------------------------------------------------------------------------------------------------------------");
+        console.log("--------------------------------------------------------------------------------------------------------------------------------------------------");
+        console.log("Player                       MIN   PTS   FGM   FGA   FG%   3PM   3PA   3P%   FTM   FTA   FT%   ORB   DRB   TRB   AST   STL   BLK   TOV    PF   +/-");
+        console.log("--------------------------------------------------------------------------------------------------------------------------------------------------");
 
         var sorted = players.sort(function(l, r) {
             var ll = that.players[l.id];
@@ -685,7 +686,7 @@ BoxScore.prototype.print = function() {
             return rr[Event.PTS] - ll[Event.PTS];
         });
         function formatLine(name, stats) {
-            var str = pad(name, 22);
+            var str = pad(name, 26);
             str += pad((new Time(stats[Event.MINUTES])).mmss(), 6);
             str += pad(stats[Event.PTS], 6);
             str += pad(stats[Event.FGM2] + stats[Event.FGM3], 6);
