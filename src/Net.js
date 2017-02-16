@@ -1,7 +1,7 @@
 /* global require, module */
 
 var safe = require('safetydance');
-var fs = require('fs');
+var fs = require('fs-extra');
 var request = require('request');
 var Log = require('./Log.js');
 var log = Log.log;
@@ -15,7 +15,11 @@ function Net(options)
     var good = false;
     if (/\/$/.exec(options.cacheDir)) {
         var stat = safe.fs.statSync(options.cacheDir);
-        if ((!stat && safe.fs.mkdirSync(options.cacheDir)) || stat.isDirectory()) {
+        if (stat && options.clear) {
+            fs.removeSync(options.cacheDir);
+            stat = false;
+        }
+        if ((!stat && safe.fs.mkdirSync(options.cacheDir)) || (stat && stat.isDirectory())) {
             good = true;
         }
     }

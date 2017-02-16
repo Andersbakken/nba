@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /*global require, __dirname, setTimeout */
-const argv = require('yargs').usage("Usage: %0 --game [arg] --max-time [time] --log-file [file] --verbose").argv;
+const argv = require('yargs').usage("Usage: %0 --game [arg] --max-time [time] --log-file [file] --verbose|-v --clear-cache|-C").argv;
 
 const NBA = require('./NBA.js');
 const process = require('process');
@@ -38,7 +38,7 @@ var gamesById = {};
 var league = new NBA.League;
 
 var app = express();
-var net = new Net({cacheDir: (argv.cacheDir || __dirname + "/cache/") });
+var net = new Net({cacheDir: (argv.cacheDir || __dirname + "/cache/"), clear: (argv.C || argv["clear-cache"]) });
 
 var host = `localhost:${port}`;
 function formatGame(game)
