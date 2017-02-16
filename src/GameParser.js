@@ -9,7 +9,7 @@ const safe = require('safetydance');
 // determine what personId's are in the game.
 
 var debugLineups = true;
-// debugLineups = false;
+debugLineups = false;
 
 function assert(cond, msg)
 {
@@ -307,13 +307,13 @@ function parseQuarters(league, data) {
         {
             var hh = [];
             for (var h in homeLineup) {
-                hh.push(home.players[h].name);
+                hh.push(game.homePlayers[h].name);
             }
 
             var aa = [];
 
             for (var a in awayLineup) {
-                aa.push(away.players[a].name);
+                aa.push(game.awayPlayers[a].name);
             }
             console.log((header || ""), "home", JSON.stringify(hh), "away", JSON.stringify(aa));
         }
