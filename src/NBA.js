@@ -1,7 +1,13 @@
 /* global require, module */
 
+"use strict";
 var leftPad = require('left-pad');
 var assert = require('assert');
+assert = function(cond, msg) {
+    if (!msg) {
+        console.log(`Failed \"assertion\" ${cond} ${msg}`);
+    }
+};
 
 // --- misc ---
 function currentSeasonYear() { // returns 2017 in 2016-2017 season
@@ -518,19 +524,42 @@ function BoxScore(game, league, maxTime)
         var lineup = home ? homeLineup : awayLineup;
         var otherLineup = home ? awayLineup : homeLineup;
         var pts = 0;
+        var dump;
         switch (ev.type) {
         case Event.FGM2: pts = 2; break;
         case Event.FGM3: pts = 3; break;
         case Event.FTM: pts = 1; break;
         case Event.SUBBED_IN:
-            assert(!(ev.data.id in lineup));
+            assert(!(ev.data.id in lineup), `${ev.data.toString()}  already in lineup`);
+
+            dump = [];
+            for (let jj in lineup) {
+                dump.push(league.players[jj].toString());
+            }
+            // console.log("got event", i, game.events.length, ev.toString(), dump);
+
             lineup[ev.data.id] = ev.time;
             if (quarter == 0)
                 this.players[ev.data.id][Event.STARTED] = true;
             break;
         case Event.SUBBED_OUT:
-            assert(ev.data.id in lineup);
+            // console.log("got event", i, game.events.length, ev.toString());
+            assert(ev.data.id in lineup, `${ev.data.toString()} not in lineup`);
+            if (!lineup[ev.data.id]) {
+                console.log("bad lineup not containing " + ev.data.toString());
+                for (var jj in lineup) {
+                    console.log(league.players[jj].toString());
+                }
+                console.log(Object.keys(lineup));
+            }
             var start = lineup[ev.data.id].value;
+
+            dump = [];
+            for (let jj in lineup) {
+                dump.push(league.players[jj].toString());
+            }
+            // console.log("got event", i, game.events.length, ev.toString(), dump);
+
             var end = ev.time.value;
             if (maxTime) {
                 start = Math.min(start, maxTime.value);
