@@ -17,7 +17,7 @@ function assert(cond, msg)
         console.error("assertion failed", msg);
     }
 }
-function parseQuarters(league, net, data) {
+function parseQuarters(league, data) {
     return new Promise(function(resolve) {
         var home = league.find(data.gameData.home);
         var away = league.find(data.gameData.away);
