@@ -353,8 +353,8 @@ function parseQuarters(league, data) {
                     assert(Object.keys(lineup).length <= 5, "Too many players");
                 } else {
                     if (!lineup[ev.data.id]) {
-                        if (!quarter)
-                            console.log("Adding a sub in at event start", ev.data.toString(), "because of", ev.toString());
+                        // if (!quarter)
+                        //     console.log("Adding a sub in at event start", ev.data.toString(), "because of", ev.toString());
                         subs.push(new NBA.Event(NBA.Event.SUBBED_IN, NBA.Time.quarterStart(quarter), ev.team, ev.data));
                         // game.events.splice(lastQuarterStart, 0, new
                         lineup[ev.data.id] = true;
