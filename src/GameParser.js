@@ -1,7 +1,7 @@
 /* global require, module */
 
 const NBA = require('./NBA.js');
-const assert = require('assert');
+// var assert = require('assert');
 const safe = require('safetydance');
 
 // http://data.nba.net/data/10s/prod/v1/20170209/0021600798_boxscore.json
@@ -9,7 +9,14 @@ const safe = require('safetydance');
 // determine what personId's are in the game.
 
 var debugLineups = true;
+// debugLineups = false;
 
+function assert(cond, msg)
+{
+    if (!cond) {
+        console.error("assertion failed", msg);
+    }
+}
 function parseQuarters(league, net, data) {
     return new Promise(function(resolve) {
         var home = league.find(data.gameData.home);
@@ -308,7 +315,7 @@ function parseQuarters(league, net, data) {
             for (var a in awayLineup) {
                 aa.push(away.players[a].name);
             }
-            console.log((header || ""), "home", hh, "away", aa);
+            console.log((header || ""), "home", JSON.stringify(hh), "away", JSON.stringify(aa));
         }
         quarter = undefined;
         var subs = [];
@@ -346,6 +353,8 @@ function parseQuarters(league, net, data) {
                     assert(Object.keys(lineup).length <= 5, "Too many players");
                 } else {
                     if (!lineup[ev.data.id]) {
+                        if (!quarter)
+                            console.log("Adding a sub in at event start", ev.data.toString(), "because of", ev.toString());
                         subs.push(new NBA.Event(NBA.Event.SUBBED_IN, NBA.Time.quarterStart(quarter), ev.team, ev.data));
                         // game.events.splice(lastQuarterStart, 0, new
                         lineup[ev.data.id] = true;
