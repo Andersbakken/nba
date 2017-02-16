@@ -68,7 +68,8 @@ function parseQuarters(league, net, data) {
                 var timeLeft = /^([0-9][0-9]?):([0-9][0-9])\.?([0-9]*)/.exec(play.clock);
                 time.add(-(parseInt(timeLeft[1]) * 60 * 1000));
                 time.add(-(parseInt(timeLeft[2]) * 1000));
-                time.add(-(parseInt(timeLeft[3])));
+                if (timeLeft[3])
+                    time.add(-(parseInt(timeLeft[3])));
                 // console.log(match[1], time.mmss(), description);
                 var homeEvent = match[1] == home.abbrev;
                 assert(homeEvent || match[1] == away.abbrev, "event wrong");
