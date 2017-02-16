@@ -123,12 +123,13 @@ function findGame(req, res, next) {
     }
 
     var quarters = [];
+    var box;
     function getNextQuarter() {
         return net.get(`http://data.nba.net/data/10s/prod/v1/${req.params.date}/${game.gameId}_pbp_${quarters.length + 1}.json`).then(function(data) {
             if (data.statusCode != 200) {
                 throw new Error(`Got ${data.statusCode} for ${data.url}`);
             }
-            var quarterData = JSON.parse(data.body);
+            var quarterData = safe.JSON.parse(data.body);
             if (!(quarterData.plays instanceof Array)) {
                 throw new Error("Invalid quarter data: " + data.url);
             }
@@ -144,13 +145,23 @@ function findGame(req, res, next) {
             }
             safe.fs.writeFileSync(`/tmp/quarter_${quarters.length}.json`, JSON.stringify(quarterData, undefined, 4));
             if (done) {
-                return GameParser.parseQuarters(league, net, { gameData: game, quarters: quarters});
+                return GameParser.parseQuarters(league, { gameData: game, quarters: quarters, box: box});
             } else {
                 return getNextQuarter();
             }
         });
     }
-    getNextQuarter().then(function(response) {
+    net.get({url: `http://data.nba.net/data/10s/prod/v1/${req.params.date}/${game.gameId}_boxscore.json` }).then(function(data) {
+        if (data.statusCode != 200) {
+            throw new Error(`Got ${data.statusCode} for ${data.url}`);
+        }
+        var boxData = safe.JSON.parse(data.body);
+        if (!(boxData.stats instanceof Object)) {
+            throw new Error("Invalid boxscore data: " + data.url);
+        }
+        box = boxData;
+        return getNextQuarter();
+    }).then(function(response) {
         // console.log(Object.keys(response), response instanceof NBA.Game);
         req.game = response;
         next();
