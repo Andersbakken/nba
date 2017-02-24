@@ -136,7 +136,7 @@ function findGame(req, res, next) {
 
             var lastPlay = quarterData.plays[quarterData.plays.length - 1];
             var done = false;
-            if (lastPlay.description != 'End Period') {
+            if (!lastPlay || lastPlay.description != 'End Period') {
                 net.clearCache(data.url);
                 done = true;
             } else if (quarters.length >= 4 && lastPlay.hTeamScore != lastPlay.vTeamScore) {
