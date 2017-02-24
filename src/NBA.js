@@ -80,6 +80,28 @@ Time.prototype = {
         str += this.seconds;
         return str;
     },
+    pretty: function() {
+        function th(val) {
+            switch (val) {
+            case 1: return "1st";
+            case 2: return "2nd";
+            case 3: return "3rd";
+            default:
+                return val + "th";
+            }
+        }
+        var ret;
+        var q = this.quarter;
+        if (q < 4) {
+            ret = th(q + 1) + " quarter ";
+        } else {
+            ret = th(q - 3) + " overtime ";
+        }
+        var end = Time.quarterEnd(q);
+        var left = new Time(end.value - this.value);
+        ret += left.mmss();
+        return ret;
+    },
     toString: function() {
         return "value: " + this.value + " " + this.mmss() + " q: " + this.quarter;
     }

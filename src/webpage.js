@@ -120,7 +120,8 @@ window.changeMaxTime = function(value) {
 };
 
 window.displayMaxTime = function(value) {
-    document.getElementById("timeSliderLabel").innerText = gameTimeForValue(value).mmss();
+    var t = gameTimeForValue(value);
+    document.getElementById("timeSliderLabel").innerText = t.pretty() + " " + t.mmss();
     // console.log("got display value", value);
 };
 
