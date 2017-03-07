@@ -108,7 +108,7 @@ function displayGame(gameId)
             alert(error);
             return;
         }
-        console.log(result);
+        // console.log(result);
         currentGame = NBA.Game.decode(result, league);
         console.log("Got game length", currentGame.length.mmss(), currentGame.length.quarter, currentGame.length.value);
         document.getElementById("timeSlider").value = 0;
@@ -116,6 +116,7 @@ function displayGame(gameId)
         document.getElementById("timeSlider").style.display = 'block';
         document.getElementById("timeSliderLabel").style.display = 'block';
         renderBoxScore(new NBA.Time(0));
+        window.displayTime("0");
     });
 }
 
@@ -139,6 +140,11 @@ function sliderValueForGameTime(time)
 
 window.changeTime = function(value) {
     var time = gameTimeForValue(value);
+    if (value == 1000 && quartersExposed <= currentGame.length.quarter) {
+        ++quartersExposed;
+        document.getElementById("timeSlider").value = sliderValueForGameTime(time);
+        window.displayTime(value);
+    }
     if (!currentGame.gameFinished && currentGame.length && time.value >= currentGame.length.value) {
         loadGame(currentGame.id, function(error, result) {
             console.log("reloading game");
@@ -187,7 +193,10 @@ window.selectDay = function(day, game)
         var idx = 0;
         var html = "";
         for (var i=0; i<gamesList.length; ++i) {
-            html += '<a href="javascript:selectGame(' + i + ')">' + gamesList[i].away + '@' + gamesList[i].home + ' ' + new Date(gamesList[i].gameTime.toLocaleString()) + '</a><br><br/>';
+            var key = i;
+            if (key >= 10)
+                key = String.fromCharCode((i - 10) + 'a'.charCodeAt(0));
+            html += '<a href="javascript:selectGame(' + i + ')">' + key + ": " + gamesList[i].away + '@' + gamesList[i].home + ' ' + new Date(gamesList[i].gameTime.toLocaleString()) + '</a><br><br/>';
         }
         document.getElementById("games").innerHTML = html;
         if (game)
@@ -275,16 +284,42 @@ document.onkeydown = function(e) {
         window.changeTime(value);
     }
     switch (e.keyCode) {
-    case 37:
+    case 37: // left
         if (currentGame) {
-            changeSliderBy(-5);
+            changeSliderBy(e.ctrlKey ? -50 : -5);
         }
-        break;
-    case 39:
+        return;
+    case 39: // right
         if (currentGame) {
-            changeSliderBy(5);
+            changeSliderBy(e.ctrlKey ? 50 : 5);
         }
-        break;
+        return;
+    }
+
+    switch (String.fromCharCode(e.keyCode).toLowerCase()) {
+    case 'n': window.nextDay(); break;
+    case 'p': window.prevDay(); break;
+    case '0': window.selectGame(0); break;
+    case '1': window.selectGame(1); break;
+    case '2': window.selectGame(2); break;
+    case '3': window.selectGame(3); break;
+    case '4': window.selectGame(4); break;
+    case '5': window.selectGame(5); break;
+    case '6': window.selectGame(6); break;
+    case '7': window.selectGame(7); break;
+    case '8': window.selectGame(8); break;
+    case '9': window.selectGame(9); break;
+    case 'a': window.selectGame(10); break;
+    case 'b': window.selectGame(11); break;
+    case 'c': window.selectGame(12); break;
+    case 'd': window.selectGame(13); break;
+    case 'e': window.selectGame(14); break;
+    case 'f': window.selectGame(15); break;
+    case 'g': window.selectGame(16); break;
+    case 'h': window.selectGame(17); break;
+    case 'i': window.selectGame(18); break;
+    case 'j': window.selectGame(19); break;
+    case 'k': window.selectGame(20); break;
     }
 };
 
