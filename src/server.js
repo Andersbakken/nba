@@ -126,23 +126,24 @@ function findGame(req, res, next) {
     function getNextQuarter() {
         return net.get(`http://data.nba.net/data/10s/prod/v1/${req.params.date}/${game.gameId}_pbp_${quarters.length + 1}.json`).then(function(data) {
             if (data.statusCode != 200) {
-                throw new Error(`Got ${data.statusCode} for ${data.url}`);
-            }
-            var quarterData = JSON.parse(data.body);
-            if (!(quarterData.plays instanceof Array)) {
-                throw new Error("Invalid quarter data: " + data.url);
-            }
-            quarters.push(quarterData);
+                done = true;
+            } else {
+                var quarterData = JSON.parse(data.body);
+                if (!(quarterData.plays instanceof Array)) {
+                    throw new Error("Invalid quarter data: " + data.url);
+                }
+                quarters.push(quarterData);
 
-            var lastPlay = quarterData.plays[quarterData.plays.length - 1];
-            var done = false;
-            if (!lastPlay || lastPlay.description != 'End Period') {
-                net.clearCache(data.url);
-                done = true;
-            } else if (quarters.length >= 4 && lastPlay.hTeamScore != lastPlay.vTeamScore) {
-                done = true;
+                var lastPlay = quarterData.plays[quarterData.plays.length - 1];
+                var done = false;
+                if (!lastPlay || lastPlay.description != 'End Period') {
+                    net.clearCache(data.url);
+                    done = true;
+                } else if (quarters.length >= 4 && lastPlay.hTeamScore != lastPlay.vTeamScore) {
+                    done = true;
+                }
+                safe.fs.writeFileSync(`/tmp/quarter_${quarters.length}.json`, JSON.stringify(quarterData, undefined, 4));
             }
-            safe.fs.writeFileSync(`/tmp/quarter_${quarters.length}.json`, JSON.stringify(quarterData, undefined, 4));
             if (done) {
                 return GameParser.parseQuarters(league, { gameData: game, quarters: quarters});
             } else {

@@ -203,8 +203,6 @@ window.onhashchange = handleUrl;
 window.nextDay = function()
 {
     var date = addDays(curDay, 1);
-    if (date.valueOf() > (new Date()).valueOf())
-        return;
     window.location.hash = "#day=" + NBA.formatDate(date);
 
 };
