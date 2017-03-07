@@ -124,11 +124,15 @@ Time.quarterEnd = function(idx) {
 
 function Player(name, id)
 {
-    var comma = name.lastIndexOf(', ');
-    if (comma == -1) {
-        this.names = [name];
+    if (name instanceof Array) {
+        this.names = name;
     } else {
-        this.names = [ name.substr(comma + 2), name.substr(0, comma) ];
+        var comma = name.lastIndexOf(', ');
+        if (comma == -1) {
+            this.names = [name];
+        } else {
+            this.names = [ name.substr(comma + 2), name.substr(0, comma) ];
+        }
     }
     this.id = id;
     this.toString = function() { return this.name; }; // return `Player(${this.name}, ${this.id})`; };
@@ -140,6 +144,16 @@ Player.prototype =  {
     },
     encode: function() {
         return { names: this.names, id: this.id };
+    },
+    get link() {
+        var ret = "http://www.nba.com/players/";
+        this.names.forEach(function(name) {
+            var rx = new RegExp(' ', 'g');
+            ret += name.toLowerCase().replace(rx, '_');
+            ret += '/';
+        });
+        ret += this.id;
+        return ret;
     }
 };
 
@@ -665,7 +679,7 @@ BoxScore.prototype.visit = function(cb) {
             arr.push(stats[Event.PF]);
             cb(context, arr);
         }
-        sorted.forEach(function(player) { formatLine(player.name, that.players[player.id], "player"); });
+        sorted.forEach(function(player) { formatLine(player, that.players[player.id], "player"); });
         formatLine("Total", stats, "total");
         cb("teamEnd");
     }
