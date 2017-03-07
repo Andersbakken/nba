@@ -57,7 +57,7 @@ function renderBoxScore(time)
     var headers;
     box.visit(function(context, data) {
         if (context == 'team') {
-            html += `<p><pre>${data.name}</pre></p>`;
+            html += `<p><pre><a href="${data.link}">${data.name}</a></pre></p>`;
             return;
         } else if (context == 'header') {
             html += '<table><tr>';
@@ -70,7 +70,7 @@ function renderBoxScore(time)
             html += '<tr>';
             var idx = 0;
             data.forEach((d) => {
-                if (idx == 0) {
+                if (idx == 0 && context == 'player') {
                     d = '<a href="' + d.link + '">' + d.name + '</a>';
                 } else {
                     if (/%$/.exec(headers[idx])) {

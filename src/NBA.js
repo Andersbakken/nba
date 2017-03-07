@@ -173,7 +173,10 @@ function Team(name, abbrev, id)
     this.id = id;
     var date = new Date();
     var year = date.getMonth() >= 9 ? (date.getYear() + 1) : date.getYear();
-    this.link = `http://www.basketball-reference.com/teams/${abbrev}/${year}.html`;
+    var split = name.split(' ');
+    var nick = split[split.length - 1].toLowerCase();
+    this.link = `http://www.nba.com/teams/${nick}`;
+    // this.link = `http://www.basketball-reference.com/teams/${abbrev}/${year}.html`;
 }
 
 // --- Division ---
