@@ -70,16 +70,20 @@ function renderBoxScore(time)
             html += '<tr>';
             var idx = 0;
             data.forEach((d) => {
-                if (/%$/.exec(headers[idx])) {
-                    if (!d) {
-                        d = "";
-                    } else if (d == 1) {
-                        d = "1.000";
-                    } else {
-                        d = "." + d.toFixed(3).substr(1).substr(1);
+                if (idx == 0) {
+                    d = '<a href="' + d.link + '">' + d.name + '</a>';
+                } else {
+                    if (/%$/.exec(headers[idx])) {
+                        if (!d) {
+                            d = "";
+                        } else if (d == 1) {
+                            d = "1.000";
+                        } else {
+                            d = "." + d.toFixed(3).substr(1).substr(1);
+                        }
+                    } else if (headers[idx] == 'mins') {
+                        d = (new NBA.Time(d)).mmss();
                     }
-                } else if (headers[idx] == 'mins') {
-                    d = (new NBA.Time(d)).mmss();
                 }
                 ++idx;
                 html += `<td><pre>${d}</pre></td>`;
