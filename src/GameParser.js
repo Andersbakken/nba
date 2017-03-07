@@ -26,7 +26,8 @@ function parseQuarters(league, data) {
         if (!away)
             throw new Error(`Can't find home team from ${data.gameData.away}`);
 
-        var game = new NBA.Game(home, away);
+        var game = new NBA.Game(home, away, data.id);
+        game.gameFinished = data.gameFinished;
         console.log(away.abbrev, "@", home.abbrev);
 
         data.quarters.forEach(function(q) {
@@ -61,6 +62,7 @@ function parseQuarters(league, data) {
             game.events.push(new NBA.Event(NBA.Event.QUARTER_START, NBA.Time.quarterStart(quarter), undefined, quarter));
             var lastTeamMiss;
 
+            var end = undefined;
             q.plays.forEach(function(play) {
                 var description = play.description;
                 // console.log("description", description);
@@ -68,6 +70,7 @@ function parseQuarters(league, data) {
                     return;
                 var match = /\[([A-Z][A-Z][A-Z])[ \]]/.exec(description);
                 if (!match) {
+                    end = description == 'End Period';
                     // console.log("no match", description);
                     return;
                 }
@@ -296,7 +299,8 @@ function parseQuarters(league, data) {
 
                 console.log("unhandled event", description);
             });
-            game.events.push(new NBA.Event(NBA.Event.QUARTER_END, NBA.Time.quarterEnd(quarter), undefined, quarter)); // only if quarter actually ended
+            if (end)
+                game.events.push(new NBA.Event(NBA.Event.QUARTER_END, NBA.Time.quarterEnd(quarter), undefined, quarter)); // only if quarter actually ended
             ++quarter;
         });
 

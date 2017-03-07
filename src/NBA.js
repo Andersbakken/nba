@@ -421,18 +421,21 @@ Event.eventNames = (function() {
 
 // --- Game ---
 
-function Game(home, away)
+function Game(home, away, id)
 {
     this.home = home;
     this.away = away;
     this.events = [];
     this.homePlayers = {};
     this.awayPlayers = {};
+    this.gameFinished = undefined;
+    this.id = id;
 }
 Game.decode = function(object, league) {
     var home = league.find(object.home);
     var away = league.find(object.away);
-    var ret = new Game(home, away);
+    var ret = new Game(home, away, object.id);
+    ret.gameFinished = object.gameFinished;
     league.players = {};
     object.homePlayers.forEach((player) => {
         var p = Player.decode(player);
@@ -458,7 +461,9 @@ Game.prototype = {
         var ret = {
             home: this.home.name,
             away: this.away.name,
-            events: this.events.map((event) => { return this.encodeEvent(event); })
+            events: this.events.map((event) => { return this.encodeEvent(event); }),
+            gameFinished: this.gameFinished,
+            id: this.id
         };
 
         ["homePlayers", "awayPlayers"].forEach((key) => {

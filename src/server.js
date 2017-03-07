@@ -125,6 +125,7 @@ function findGame(req, res, next) {
     var quarters = [];
     function getNextQuarter() {
         return net.get(`http://data.nba.net/data/10s/prod/v1/${req.params.date}/${game.gameId}_pbp_${quarters.length + 1}.json`).then(function(data) {
+            var gameFinished = false;
             if (data.statusCode != 200) {
                 done = true;
             } else {
@@ -140,12 +141,13 @@ function findGame(req, res, next) {
                     net.clearCache(data.url);
                     done = true;
                 } else if (quarters.length >= 4 && lastPlay.hTeamScore != lastPlay.vTeamScore) {
+                    gameFinished = true;
                     done = true;
                 }
                 safe.fs.writeFileSync(`/tmp/quarter_${quarters.length}.json`, JSON.stringify(quarterData, undefined, 4));
             }
             if (done) {
-                return GameParser.parseQuarters(league, { gameData: game, quarters: quarters});
+                return GameParser.parseQuarters(league, { gameData: game, quarters: quarters, gameFinished: gameFinished, id: game.gameId });
             } else {
                 return getNextQuarter();
             }
