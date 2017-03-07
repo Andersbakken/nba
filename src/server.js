@@ -86,6 +86,11 @@ app.get('/api/games/:date', gamesByDate, (req, res, next) => {
     }
 });
 
+app.post('/deploy', (req, res) => {
+    log("GOT DEPLOY", req);
+    res.sendStatus(200);
+});
+
 function findGame(req, res, next) {
     var err;
     gamesByDate(req, res, function(error) { err = error; });
