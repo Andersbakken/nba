@@ -2,6 +2,8 @@
 
 var NBA = require('./NBA.js');
 
+var SliderMax = 1000;
+
 function get(url, cb)
 {
     var req = new XMLHttpRequest();
@@ -31,15 +33,16 @@ var curDay;
 var gamesList;
 var league = new NBA.League;
 var currentGame;
+var quartersExposed = 4;
 
 window.selectGame = function(idx)
 {
     window.location.hash = "#day=" + NBA.formatDate(new Date(gamesList[idx].gameTime)) + "#game=" + gamesList[idx].gameId;
 };
 
-function renderBoxScore(maxTime)
+function renderBoxScore(time)
 {
-    var box = new NBA.BoxScore(currentGame, league, maxTime);
+    var box = new NBA.BoxScore(currentGame, league, time);
     // document.getElementById('boxscore').innerHTML = '<pre>' + box.print() + '</pre>';
     // gamesList = result;
     // // console.log(games.innerHtml);
@@ -87,12 +90,19 @@ function renderBoxScore(maxTime)
     document.getElementById("boxscore").innerHTML = html;
 }
 
-function displayGame(gameId)
+function loadGame(gameId, cb)
 {
     var fmt = NBA.formatDate(curDay);
+    get(`/api/games/${fmt}/${gameId}`, cb);
+}
+
+function displayGame(gameId)
+{
+    setTimeout(function() { document.getElementById("timeSlider").focus(); }, 100);
     document.getElementById("boxscore").innerHTML = "Loading game...";
+    quartersExposed = 4;
     currentGame = undefined;
-    get(`/api/games/${fmt}/${gameId}`, function(error, result) {
+    loadGame(gameId, function(error, result) {
         if (error) {
             document.getElementById("boxscore").innerHTML = "Error... " + error;
             alert(error);
@@ -100,6 +110,7 @@ function displayGame(gameId)
         }
         console.log(result);
         currentGame = NBA.Game.decode(result, league);
+        console.log("Got game length", currentGame.length.mmss(), currentGame.length.quarter, currentGame.length.value);
         document.getElementById("timeSlider").value = 0;
         document.getElementById("timeSliderLabel").innerText = "00:00";
         document.getElementById("timeSlider").style.display = 'block';
@@ -110,16 +121,44 @@ function displayGame(gameId)
 
 function gameTimeForValue(value)
 {
-    var length = parseInt(currentGame.length.value * (value / 1000));
+    value = parseInt(value);
+    var max = NBA.Time.quarterEnd(quartersExposed - 1);
+    if (value === SliderMax) {
+        return max; // keep time.end == true
+    }
+    var length = parseInt(max.value * (value / SliderMax));
     return new NBA.Time(length);
 }
-window.changeMaxTime = function(value) {
-    renderBoxScore(gameTimeForValue(value));
+
+function sliderValueForGameTime(time)
+{
+    var ms = time.value;
+    var maxMs = NBA.Time.quarterEnd(quartersExposed - 1).value;
+    return (ms / maxMs) * 1000;
+}
+
+window.changeTime = function(value) {
+    var time = gameTimeForValue(value);
+    if (!currentGame.gameFinished && currentGame.length && time.value >= currentGame.length.value) {
+        loadGame(currentGame.id, function(error, result) {
+            console.log("reloading game");
+            currentGame = NBA.Game.decode(result, league);
+            if (time.value > currentGame.length.value) {
+                time = currentGame.length;
+                var sliderVal = sliderValueForGameTime(time);
+                document.getElementById("timeSlider").value = sliderVal;
+                window.displayTime(sliderVal);
+            }
+            renderBoxScore(time);
+        });
+    } else {
+        renderBoxScore(time);
+    }
     // // document.getElementById("timeSliderLabel").innerText = gameTimeForValue(value).mmss();
     // console.log("got value", value);
 };
 
-window.displayMaxTime = function(value) {
+window.displayTime = function(value) {
     var t = gameTimeForValue(value);
     document.getElementById("timeSliderLabel").innerText = t.pretty() + " " + t.mmss();
     // console.log("got display value", value);
@@ -204,7 +243,6 @@ window.nextDay = function()
 {
     var date = addDays(curDay, 1);
     window.location.hash = "#day=" + NBA.formatDate(date);
-
 };
 
 window.prevDay = function()
@@ -222,3 +260,31 @@ function addDays(date, days)
 window.onload = function() {
     handleUrl();
 };
+
+document.onkeydown = function(e) {
+    function changeSliderBy(amount) {
+        var val = parseInt(document.getElementById("timeSlider").value);
+        val += amount;
+        if (val < 0)
+            val = 0;
+        if (val > SliderMax)
+            val = SliderMax;
+        var value = "" + val;
+        document.getElementById("timeSlider").value = value;
+        window.displayTime(value);
+        window.changeTime(value);
+    }
+    switch (e.keyCode) {
+    case 37:
+        if (currentGame) {
+            changeSliderBy(-5);
+        }
+        break;
+    case 39:
+        if (currentGame) {
+            changeSliderBy(5);
+        }
+        break;
+    }
+};
+

@@ -507,7 +507,7 @@ Game.prototype = {
 
 // --- BoxScore ---
 
-function BoxScore(game, league, maxTime)
+function BoxScore(game, league, time)
 {
     function values() { var ret = []; ret[Event.numEvents - 1] = 0; ret.fill(0, 0, Event.numEvents - 1); return ret; }
 
@@ -538,7 +538,7 @@ function BoxScore(game, league, maxTime)
     for (var i=0; i<game.events.length; ++i) {
         var ev = game.events[i];
 
-        if (!expired && maxTime && ev.time.value > maxTime.value)
+        if (!expired && time && ev.time.value > time.value)
             expired = true;
         if (ev.type == Event.QUARTER_START) {
             quarter = ev.data;
@@ -589,9 +589,9 @@ function BoxScore(game, league, maxTime)
             // console.log("got event", i, game.events.length, ev.toString(), JSON.stringify(dump));
 
             var end = ev.time.value;
-            if (maxTime) {
-                start = Math.min(start, maxTime.value);
-                end = Math.min(end, maxTime.value);
+            if (time) {
+                start = Math.min(start, time.value);
+                end = Math.min(end, time.value);
             }
             var duration = end - start;
             this.players[ev.data.id][Event.MINUTES] += duration;
