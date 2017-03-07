@@ -211,7 +211,7 @@ window.selectDay = function(day, game)
 
 function handleUrl()
 {
-    console.log("got a url", window.location);
+    // console.log("got a url", window.location);
     var day, game;
     window.location.hash.split('#').filter(function(e) { return e.length != 0; }).forEach(function(item) {
         var split = item.split('=');
