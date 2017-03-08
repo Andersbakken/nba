@@ -248,6 +248,10 @@ app.get("/", (req, res) => {
     res.redirect("/index.html");
 });
 
+app.get("/favicon.ico", (req, res) => {
+    res.redirect("/www/favicon.ico");
+});
+
 fs.readdirSync(__dirname + "/www/").forEach((file) => {
     app.get("/" + file, (req, res) => {
         res.contentType(file);
