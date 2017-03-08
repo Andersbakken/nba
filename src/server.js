@@ -126,9 +126,11 @@ function findGame(req, res, next) {
     }
 
     var gameSpec;
-    var gameId = parseInt(req.params.game);
-    if (!gameId) {
+    var gameId;
+    if (req.params.game.length == 7 && req.params.game[3] == '@') {
         gameSpec = req.params.game;
+    } else {
+        gameId = req.params.game; // this needs to stay a string, there are leading zeroes
     }
 
     var game;
