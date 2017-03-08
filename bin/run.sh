@@ -1,10 +1,10 @@
-#!/bin/bash
+#!/bin/bash -x
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-cd $DIR/..src
+cd $DIR/../src
 while true; do
     rm -f log
-    ./server -l ./server.log --deploy "$@" | tee log
+    ./server.js -l ./server.log --deploy "$@" | tee log
     RESTART=
     if [ ! "$?" -eq 0 ]; then
         /bin/mv log crash.log.`date +%s`
