@@ -133,6 +133,7 @@ function findGame(req, res, next) {
 
     var game;
     for (var i=0; i<req.games.length; ++i) {
+        console.log("game id", gameId, i, req.games.length, req.games[i].gameId);
         if (gameId) {
             if (req.games[i].gameId == gameId) {
                 game = req.games[i];
