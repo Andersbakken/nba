@@ -101,7 +101,7 @@ app.post('/deploy', (req, res) => {
     calculatedSignature = 'sha1=' + hmac.digest('hex');
 
     if (req.headers['x-hub-signature'] === calculatedSignature) {
-        log("Good signature");
+        log("Good signature", argv.deploy, req.body.ref);
         res.sendStatus(200);
         if (argv.deploy && req.body && req.body.ref == 'refs/heads/deploy') {
             fs.writeFileSync('.deploy.pull', undefined);
