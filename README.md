@@ -19,3 +19,17 @@ NBA!
 check here for stats docs:
 
 https://github.com/seemethere/nba_py/wiki/stats.nba.com-Endpoint-Documentation
+
+
+server setup:
+
+# enable nodejs to listen on ports < 1024 without being root. Less
+# nasty than running the whole webserver with elevated privileges
+
+sudo setcap 'cap_net_bind_service=+ep' /usr/bin/nodejs
+
+# make sure timezone is correct, otherwise we get problems with lists
+# of games. Should maybe be fixed to account for users' timezones in
+# the webpage
+
+sudo dpkg-reconfigure tzdata
