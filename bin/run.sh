@@ -6,6 +6,7 @@ if [ -z "$NBA_SECRET" ]; then
     echo "No secret passed"
     exit 1
 fi
+browserify -o bundle.js www/webpage.js
 
 while true; do
     rm -f log
@@ -27,6 +28,7 @@ while true; do
                 git stash pop
             fi
             npm install
+            browserify -o bundle.js www/webpage.js
             RESTART=1
         fi
     fi
