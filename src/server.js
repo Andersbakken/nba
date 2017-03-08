@@ -89,7 +89,7 @@ app.get('/api/games/:date', gamesByDate, (req, res, next) => {
 });
 
 app.post('/deploy', (req, res) => {
-    // console.log(typeof req.body, req.body);
+    console.log(typeof req.body, req.body, req.headers);
     res.sendStatus(200);
     if (argv.deploy && req.body && req.body.ref == 'refs/heads/deploy') {
         fs.writeFileSync('.deploy.pull', undefined);
