@@ -28,7 +28,7 @@ while true; do
                 git stash pop
             fi
             npm install
-            browserify -o bundle.js www/webpage.js
+            browserify -o www/bundle.js webpage.js
             RESTART=1
         fi
     fi
