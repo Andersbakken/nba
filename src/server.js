@@ -12,6 +12,7 @@ const clone = require('clone');
 const Net = require('./Net.js');
 const bsearch = require('binary-search');
 const GameParser = require('./GameParser.js');
+const bodyParser = require('body-parser');
 const Log = require('./Log.js');
 const log = Log.log;
 const verbose = Log.verbose;
@@ -38,6 +39,7 @@ var gamesById = {};
 var league = new NBA.League;
 
 var app = express();
+app.use(bodyParser.json());
 var net = new Net({cacheDir: (argv.cacheDir || __dirname + "/cache/"), clear: (argv.C || argv["clear-cache"]) });
 
 var host = `localhost:${port}`;
@@ -87,8 +89,12 @@ app.get('/api/games/:date', gamesByDate, (req, res, next) => {
 });
 
 app.post('/deploy', (req, res) => {
-    log("GOT DEPLOY", req);
+    // console.log(typeof req.body, req.body);
     res.sendStatus(200);
+    if (argv.deploy && req.body && req.body.ref == 'refs/heads/deploy') {
+        fs.writeFileSync('.deploy.pull', undefined);
+        process.exit(0);
+    }
 });
 
 function findGame(req, res, next) {
