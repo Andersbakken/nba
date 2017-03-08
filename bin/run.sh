@@ -28,6 +28,7 @@ while true; do
             if [ -n "$STASHED" ]; then
                 git stash pop
             fi
+            npm install
             RESTART=1
         fi
     fi
