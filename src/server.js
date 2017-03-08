@@ -96,7 +96,7 @@ app.post('/deploy', (req, res) => {
     var payload = req.body;
 
     verbose("got deploy hook", req.body, req.headers);
-    hmac = crypto.createHmac('sha1', argv.deploy);
+    hmac = crypto.createHmac('sha1', process.env.NBA_SECRET);
     hmac.update(JSON.stringify(payload));
     calculatedSignature = 'sha1=' + hmac.digest('hex');
 
