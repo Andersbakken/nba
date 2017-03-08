@@ -6,7 +6,7 @@ if [ -z "$NBA_SECRET" ]; then
     echo "No secret passed"
     exit 1
 fi
-browserify -o bundle.js www/webpage.js
+browserify -o www/bundle.js webpage.js
 
 while true; do
     rm -f log
