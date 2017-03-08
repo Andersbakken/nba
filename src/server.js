@@ -20,7 +20,8 @@ const verbose = Log.verbose;
 const fatal = Log.fatal;
 Log.init(argv);
 
-const port = argv.port || argv.p || 8899;
+const httpPort = argv["http-port"] || 8899;
+const httpsPort = argv["https-port"] || 8898;
 
 const lowerBound = function(haystack, needle, comparator) {
     var idx = bsearch(haystack, needle, comparator);
@@ -43,7 +44,7 @@ var app = express();
 app.use(bodyParser.json());
 var net = new Net({cacheDir: (argv.cacheDir || __dirname + "/cache/"), clear: (argv.C || argv["clear-cache"]) });
 
-var host = `localhost:${port}`;
+var host = `localhost:${httpPort}`;
 function formatGame(game)
 {
     var match = /^(.*)\/([A-Z][A-Z][A-Z])([A-Z][A-Z][A-Z])$/.exec(game.gameUrlCode);
@@ -326,13 +327,13 @@ Promise.all(all).then(function(responses) {
 
     // console.log("Got responses", responses.length);
 
-    app.listen(port, () => {
-        console.log("Listening on port", (argv.port || argv.p || 8899));
+    app.listen(httpPort, () => {
+        console.log("Listening on port", httpPort);
     });
 
     if (argv["test"]) {
         // /api/games/20170204/0021600758 doesn't work
-        return net.get({url: "http://localhost:8899/api/games/20170204/0021600758", nocache: true }).then((response) => {
+        return net.get({url: `http://localhost:${httpPort}/api/games/20170204/0021600758`, nocache: true }).then((response) => {
             safe.fs.writeFileSync("/tmp/game.json", response.body);
             safe.fs.writeFileSync("/tmp/game.pretty.json", JSON.stringify(JSON.parse(response.body), null, 4));
             var game = NBA.Game.decode(JSON.parse(response.body), league);
