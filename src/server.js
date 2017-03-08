@@ -8,6 +8,7 @@ const process = require('process');
 const safe = require('safetydance');
 const express = require('express');
 const fs = require('fs');
+const crypto = require('crypto');
 const clone = require('clone');
 const Net = require('./Net.js');
 const bsearch = require('binary-search');
@@ -89,11 +90,24 @@ app.get('/api/games/:date', gamesByDate, (req, res, next) => {
 });
 
 app.post('/deploy', (req, res) => {
-    console.log(typeof req.body, req.body, req.headers);
-    res.sendStatus(200);
-    if (argv.deploy && req.body && req.body.ref == 'refs/heads/deploy') {
-        fs.writeFileSync('.deploy.pull', undefined);
-        process.exit(0);
+    var hmac;
+    var calculatedSignature;
+    var payload = req.body;
+
+    verbose("got deploy hook", req.body, req.headers);
+    hmac = crypto.createHmac('sha1', argv.deploy);
+    hmac.update(JSON.stringify(payload));
+    calculatedSignature = 'sha1=' + hmac.digest('hex');
+
+    if (req.headers['x-hub-signature'] === calculatedSignature) {
+        res.sendStatus(200);
+        if (argv.deploy && req.body && req.body.ref == 'refs/heads/deploy') {
+            fs.writeFileSync('.deploy.pull', undefined);
+            setTimeout(() => { process.exit(0); }, 1000);
+        }
+    } else {
+        log('Bad signature');
+        res.sendStatus(403);
     }
 });
 

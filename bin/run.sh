@@ -2,9 +2,16 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd $DIR/../src
+SECRET="$1"
+if [ -z "$SECRET" ]; then
+    echo "No secret passed"
+    exit 1
+fi
+shift
+
 while true; do
     rm -f log
-    ./server.js -l ./server.log --deploy "$@" | tee log
+    ./server.js -l ./server.log --deploy "$SECRET" "$@" | tee log
     RESTART=
     if [ ! "$?" -eq 0 ]; then
         /bin/mv log crash.log.`date +%s`
