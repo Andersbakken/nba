@@ -11,8 +11,6 @@ const fs = require('fs');
 const crypto = require('crypto');
 const clone = require('clone');
 const Net = require('./Net.js');
-const http = require('http');
-const https = require('https');
 const bsearch = require('binary-search');
 const GameParser = require('./GameParser.js');
 const bodyParser = require('body-parser');
@@ -22,6 +20,19 @@ const log = Log.log;
 const verbose = Log.verbose;
 const fatal = Log.fatal;
 var letsEncrypt = greenlock.create({ server: 'staging' });
+
+var opts = {
+    domains: ['nbadvr.com'],
+    email: 'agbakken@gmail.com',
+    agreeTos: true
+};
+
+letsEncrypt.register(opts).then(function (certs) {
+    console.log("got certs", certs);
+    // privkey, cert, chain, expiresAt, issuedAt, subject, altnames
+}, function (err) {
+    console.error("got lets encrypt error", err);
+});
 
 Log.init(argv);
 
@@ -314,7 +325,7 @@ var all = [
 //     all.push(net.get(`http://stats.nba.com/stats/commonteamroster/?TeamId=${team.id}&Season=${season}`));
 // });
 
-Promise.all(all).then(((responses) => {
+Promise.all(all).then(function(responses) {
     var response = responses[0];
     var parsed = safe.JSON.parse(response.body);
 
@@ -331,47 +342,22 @@ Promise.all(all).then(((responses) => {
         gamesById[schedule[idx].gameId] = schedule[idx];
     }
 
-    var opts = {
-        domains: ['nbadvr.com'],
-        email: 'agbakken@gmail.com',
-        agreeTos: true
-    };
-    return letsEncrypt.register(opts);
-}).then((certs) => {
-    console.log("got certs", certs);
-    return new Promise((resolve) => {
-        var sslOpts = {
-            key: certs.privkey,
-            cert: certs.cert
-        };
+    // console.log("Got responses", responses.length);
 
-        https.createServer(sslOpts, app).listen(httpsPort, () => {
-            console.log("Listening with SSL on port", httpsPort);
-            resolve();
+    app.listen(httpPort, () => {
+        console.log("Listening on port", httpPort);
+    });
+
+    if (argv["test"]) {
+        // /api/games/20170204/0021600758 doesn't work
+        return net.get({url: `http://localhost:${httpPort}/api/games/20170204/0021600758`, nocache: true }).then((response) => {
+            safe.fs.writeFileSync("/tmp/game.json", response.body);
+            safe.fs.writeFileSync("/tmp/game.pretty.json", JSON.stringify(JSON.parse(response.body), null, 4));
+            var game = NBA.Game.decode(JSON.parse(response.body), league);
+            var box = new NBA.BoxScore(game, league);
+            box.print();
+            process.exit();
         });
-    });
-}).then(() => {
-    return new Promise((resolve) => {
-        http.createServer(app).listen(httpPort, () => {
-            console.log("Listening on port", httpPort);
-            resolve();
-        });
-    });
-}).then(() => {
-    return new Promise((resolve, reject) => {
-        if (argv["test"]) {
-            // /api/games/20170204/0021600758 doesn't work
-            net.get({url: `http://localhost:${httpPort}/api/games/20170204/0021600758`, nocache: true }).then((response) => {
-                safe.fs.writeFileSync("/tmp/game.json", response.body);
-                safe.fs.writeFileSync("/tmp/game.pretty.json", JSON.stringify(JSON.parse(response.body), null, 4));
-                var game = NBA.Game.decode(JSON.parse(response.body), league);
-                var box = new NBA.BoxScore(game, league);
-                box.print();
-                process.exit();
-                resolve();
-            }).catch((error) => {
-                reject(error);
-            });
-        }
-    });
-}).catch(fatal));
+    }
+    return undefined;
+}).catch(fatal);
