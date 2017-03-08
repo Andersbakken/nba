@@ -20,7 +20,7 @@ const verbose = Log.verbose;
 const fatal = Log.fatal;
 Log.init(argv);
 
-const port = argv.port || argv.p || 8899;
+const port = argv.port || argv.p || 8000;
 
 const lowerBound = function(haystack, needle, comparator) {
     var idx = bsearch(haystack, needle, comparator);
@@ -56,7 +56,7 @@ function formatGame(game)
     };
 }
 
-// curl -v http://localhost:8899/api/games/list/20170129
+// curl -v http://localhost:8000/api/games/list/20170129
 function gamesByDate(req, res, next) {
     // console.log(req.params);
     var date = new Date(parseInt(req.params.date.substr(0, 4)),
@@ -324,12 +324,12 @@ Promise.all(all).then(function(responses) {
     // console.log("Got responses", responses.length);
 
     app.listen(port, () => {
-        console.log("Listening on port", (argv.port || argv.p || 8899));
+        console.log("Listening on port", (argv.port || argv.p || 8000));
     });
 
     if (argv["test"]) {
         // /api/games/20170204/0021600758 doesn't work
-        return net.get({url: "http://localhost:8899/api/games/20170204/0021600758", nocache: true }).then((response) => {
+        return net.get({url: "http://localhost:8000/api/games/20170204/0021600758", nocache: true }).then((response) => {
             safe.fs.writeFileSync("/tmp/game.json", response.body);
             safe.fs.writeFileSync("/tmp/game.pretty.json", JSON.stringify(JSON.parse(response.body), null, 4));
             var game = NBA.Game.decode(JSON.parse(response.body), league);
