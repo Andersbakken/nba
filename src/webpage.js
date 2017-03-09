@@ -290,12 +290,12 @@ document.onkeydown = function(e) {
     switch (e.keyCode) {
     case 37: // left
         if (currentGame) {
-            changeSliderBy(e.ctrlKey ? -50 : -5);
+            changeSliderBy(e.ctrlKey ? -50 : -3);
         }
         return;
     case 39: // right
         if (currentGame) {
-            changeSliderBy(e.ctrlKey ? 50 : 5);
+            changeSliderBy(e.ctrlKey ? 50 : 3);
         }
         return;
     }
