@@ -14,13 +14,30 @@ const Net = require('./Net.js');
 const bsearch = require('binary-search');
 const GameParser = require('./GameParser.js');
 const bodyParser = require('body-parser');
+const greenlock = require('greenlock');
 const Log = require('./Log.js');
 const log = Log.log;
 const verbose = Log.verbose;
 const fatal = Log.fatal;
+var letsEncrypt = greenlock.create({ server: 'staging' });
+
+var opts = {
+    domains: ['nbadvr.com'],
+    email: 'agbakken@gmail.com',
+    agreeTos: true
+};
+
+letsEncrypt.register(opts).then(function (certs) {
+    console.log("got certs", certs);
+    // privkey, cert, chain, expiresAt, issuedAt, subject, altnames
+}, function (err) {
+    console.error("got lets encrypt error", err);
+});
+
 Log.init(argv);
 
-const port = argv.port || argv.p || 8899;
+const httpPort = argv["http-port"] || 8899;
+const httpsPort = argv["https-port"] || 8898;
 
 const lowerBound = function(haystack, needle, comparator) {
     var idx = bsearch(haystack, needle, comparator);
@@ -40,10 +57,11 @@ var gamesById = {};
 var league = new NBA.League;
 
 var app = express();
+app.use('/', letsEncrypt.middleware());
 app.use(bodyParser.json());
 var net = new Net({cacheDir: (argv.cacheDir || __dirname + "/cache/"), clear: (argv.C || argv["clear-cache"]) });
 
-var host = `localhost:${port}`;
+var host = `localhost:${httpPort}`;
 function formatGame(game)
 {
     var match = /^(.*)\/([A-Z][A-Z][A-Z])([A-Z][A-Z][A-Z])$/.exec(game.gameUrlCode);
@@ -95,12 +113,12 @@ app.post('/deploy', (req, res) => {
     var payload = req.body;
 
     verbose("got deploy hook", req.body, req.headers);
-    hmac = crypto.createHmac('sha1', argv.deploy);
+    hmac = crypto.createHmac('sha1', process.env.NBA_SECRET);
     hmac.update(JSON.stringify(payload));
     calculatedSignature = 'sha1=' + hmac.digest('hex');
 
     if (req.headers['x-hub-signature'] === calculatedSignature) {
-        log("Good signature");
+        log("Good signature", argv.deploy, req.body.ref);
         res.sendStatus(200);
         if (argv.deploy && req.body && req.body.ref == 'refs/heads/deploy') {
             fs.writeFileSync('.deploy.pull', undefined);
@@ -326,13 +344,13 @@ Promise.all(all).then(function(responses) {
 
     // console.log("Got responses", responses.length);
 
-    app.listen(port, () => {
-        console.log("Listening on port", (argv.port || argv.p || 8899));
+    app.listen(httpPort, () => {
+        console.log("Listening on port", httpPort);
     });
 
     if (argv["test"]) {
         // /api/games/20170204/0021600758 doesn't work
-        return net.get({url: "http://localhost:8899/api/games/20170204/0021600758", nocache: true }).then((response) => {
+        return net.get({url: `http://localhost:${httpPort}/api/games/20170204/0021600758`, nocache: true }).then((response) => {
             safe.fs.writeFileSync("/tmp/game.json", response.body);
             safe.fs.writeFileSync("/tmp/game.pretty.json", JSON.stringify(JSON.parse(response.body), null, 4));
             var game = NBA.Game.decode(JSON.parse(response.body), league);

@@ -12,7 +12,7 @@ eval $BROWSERIFY
 
 while true; do
     rm -f log
-    ./server.js -l ./server.log --deploy "$NBA_SECRET" "$@" | tee log
+    ./server.js --http-port 80 --https-port 443 -l ./server.log --deploy "$@" | tee log
     RESTART=
     if [ ! "$?" -eq 0 ]; then
         /bin/mv log crash.log.`date +%s`
