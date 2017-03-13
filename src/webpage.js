@@ -57,16 +57,19 @@ function renderBoxScore(time)
     var headers;
     box.visit(function(context, data) {
         if (context == 'team') {
-            html += `<p><pre><a href="${data.link}">${data.name}</a></pre></p>`;
+            html += `<p><a href="${data.link}">${data.name}</a></p>`;
             return;
         } else if (context == 'header') {
-            html += '<table><tr>';
-            data.forEach((h) => { html += `<th><pre>${h}</pre></th>`; });
+            html += '<table class="table"><thead><tr>';
+            data.forEach((h) => { html += `<th>${h}</th>`; });
             headers = data;
-            html += '</tr>';
+            html += '</tr></thead><tbody>';
         } else if (context == "teamEnd") {
-            html += "</table>";
+            html += "</tbody></table>";
         } else if (context == 'player' || context == 'total') {
+            if (context == 'total') {
+                html += '<tfoot>';
+            }
             html += '<tr>';
             var idx = 0;
             data.forEach((d) => {
@@ -86,9 +89,12 @@ function renderBoxScore(time)
                     }
                 }
                 ++idx;
-                html += `<td><pre>${d}</pre></td>`;
+                html += `<td>${d}</td>`;
             });
             html += '</tr>';
+            if (context == 'total') {
+                html += '</tfoot>';
+            }
         }
     });
     document.getElementById("boxscore").innerHTML = html;
@@ -114,7 +120,7 @@ function displayGame(gameId)
         }
         // console.log(result);
         currentGame = NBA.Game.decode(result, league);
-        console.log("Got game length", currentGame.length.mmss(), currentGame.length.quarter, currentGame.length.value);
+        //console.log("Got game length", currentGame.length.mmss(), currentGame.length.quarter, currentGame.length.value);
         document.getElementById("timeSlider").value = 0;
         document.getElementById("timeSliderLabel").innerText = "00:00";
         document.getElementById("timeSlider").style.display = 'block';
