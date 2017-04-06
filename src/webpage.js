@@ -108,7 +108,6 @@ function loadGame(gameId, cb)
 
 function displayGame(gameId)
 {
-    setTimeout(function() { document.getElementById("timeSlider").focus(); }, 100);
     document.getElementById("boxscore").innerHTML = "Loading game...";
     quartersExposed = 4;
     currentGame = undefined;
