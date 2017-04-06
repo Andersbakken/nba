@@ -37,7 +37,8 @@ var quartersExposed = 4;
 
 window.selectGame = function(idx)
 {
-    window.location.hash = "#day=" + NBA.formatDate(new Date(gamesList[idx].gameTime)) + "#game=" + gamesList[idx].gameId;
+    if (idx < gamesList.length)
+        window.location.hash = "#day=" + NBA.formatDate(new Date(gamesList[idx].gameTime)) + "#game=" + gamesList[idx].gameId;
 };
 
 function renderBoxScore(time)
