@@ -57,12 +57,28 @@ function parseQuarters(league, data) {
         var quarter = 0;
         var homeCacheByName = {};
         var awayCacheByName = {};
+        var playerOverrides = {};
 
         data.quarters.forEach(function(q) {
             game.events.push(new NBA.Event(NBA.Event.QUARTER_START, NBA.Time.quarterStart(quarter), undefined, quarter));
             var lastTeamMiss;
 
             var end = undefined;
+            q.plays.forEach(function(play) {
+                if (!play.personId)
+                    return;
+                if (league.players[play.personId] && !playerOverrides[play.personId])
+                    return;
+                // console.log(play.description);
+                var split = play.formatted.description.split(' ');
+                // var match = /\[([A-Z][A-Z][A-Z])\] ([^ ]+)/.exec(play.description);
+                // console.log("got a player", split[0], split[2]);
+                var homeEvent = split[0] == home.abbrev;
+                var p = new NBA.Player(split[2], play.personId);
+                playerOverrides[p.id] = p;
+                var teamPlayers = (homeEvent ? game.homePlayers : game.awayPlayers);
+                teamPlayers[p.id] = p;
+            });
             q.plays.forEach(function(play) {
                 var description = play.description;
                 // console.log("description", description);
@@ -86,7 +102,9 @@ function parseQuarters(league, data) {
                 function addPlayer(playerIdOrName, homeOverride) {
                     var name = /^[0-9]*$/.exec(playerIdOrName) ? undefined : playerIdOrName.split(' ');
                     if (!name) {
-                        return league.players[playerIdOrName];
+                        if (league.players[playerIdOrName])
+                            return league.players[playerIdOrName];
+                        return playerOverrides[playerIdOrName];
                     }
                     // console.log(name, playerIdOrName);
                     var homePlayer = homeEvent;
