@@ -27,6 +27,21 @@ var opts = {
     agreeTos: true
 };
 
+function addIp(ip)
+{
+    var current = safe.JSON.parse(safe.fs.readFileSync("stats.json"));
+    if (!current) {
+        current = {};
+    }
+    if (!current[ip]) {
+        current[ip] = 1;
+    } else {
+        ++current[ip];
+    }
+
+    safe.fs.writeFileSync("stats.json", JSON.stringify(current, null, 4));
+}
+
 letsEncrypt.register(opts).then(function (certs) {
     console.log("got certs", certs);
     // privkey, cert, chain, expiresAt, issuedAt, subject, altnames
@@ -57,6 +72,10 @@ var gamesById = {};
 var league = new NBA.League;
 
 var app = express();
+app.use((req, res, next) => {
+    addIp(req.connection.remoteAddress);
+    next();
+});
 app.use('/', letsEncrypt.middleware());
 app.use(bodyParser.json());
 var net = new Net({cacheDir: (argv.cacheDir || __dirname + "/cache/"), clear: (argv.C || argv["clear-cache"]) });
