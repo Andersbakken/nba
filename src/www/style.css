@@ -1,0 +1,15 @@
+a {
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+br {
+    display: block;
+    content: "";
+    margin-top: 4;
+}
+
+tr td {
+    padding: 0 !important;
+    margin: 0 !important;
+}
