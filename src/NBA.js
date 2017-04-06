@@ -423,7 +423,10 @@ Event.TIMEOUT = 23;
 Event.TIMEOUT_20S = 24;
 Event.QUARTER_END = 25;
 Event.QUARTER_START = 26;
-Event.numEvents = Event.QUARTER_START + 1;
+// advanced
+Event.TS = 27;
+Event.EFG = 28;
+Event.numEvents = Event.EFG + 1;
 Event.eventNames = (function() {
     var ret = {};
     Object.keys(Event).forEach(function(key) {
@@ -653,7 +656,7 @@ BoxScore.prototype.visit = function(cb) {
             return rr[Event.PTS] - ll[Event.PTS];
         });
         cb("team", team);
-        cb("header", ["Player", "pts", "mins", "fgm", "fga", "fg%", "3pa", "3pm", "3p%", "fta", "ftm", "ft%", "orb", "drb", "trb", "ast", "stl", "blk", "to", "pf"]);
+        cb("header", ["Player", "pts", "mins", "fgm", "fga", "fg%", "3pa", "3pm", "3p%", "fta", "ftm", "ft%", "ts%", "efg%", "orb", "drb", "trb", "ast", "stl", "blk", "to", "pf"]);
 
         function percentage(m, a) {
             return a ? m / a : 0;
@@ -672,6 +675,8 @@ BoxScore.prototype.visit = function(cb) {
             arr.push(stats[Event.FTM]);
             arr.push(stats[Event.FTA]);
             arr.push(percentage(stats[Event.FTM], stats[Event.FTA]));
+            arr.push(percentage(stats[Event.PTS], 2 * (stats[Event.FGA2] + stats[Event.FGA3] + (stats[Event.FTA] * .44))));
+            arr.push(percentage((stats[Event.FGM2] * 2) + (stats[Event.FGM3] * 3), (stats[Event.FGA2] + stats[Event.FGA3]) * 2));
             arr.push(stats[Event.ORB]);
             arr.push(stats[Event.DRB]);
             arr.push(stats[Event.ORB] + stats[Event.DRB]);
@@ -711,7 +716,11 @@ BoxScore.prototype.print = function() {
             return '      ';
         if (m == a)
             return ' 1.000';
-        return pad((m / a).toFixed(3).substr(1), 6);
+        if (m > a) {
+            return pad((m / a).toFixed(4).substr(1), 6);
+        } else {
+            return pad((m / a).toFixed(3).substr(1), 6);
+        }
     }
 
     var that = this;

@@ -80,10 +80,10 @@ function renderBoxScore(time)
                     if (/%$/.exec(headers[idx])) {
                         if (!d) {
                             d = "";
-                        } else if (d == 1) {
-                            d = "1.000";
+                        } else if (d >= 1) {
+                            d = d.toFixed(3);
                         } else {
-                            d = "." + d.toFixed(3).substr(1).substr(1);
+                            d = d.toFixed(3).substr(1);
                         }
                     } else if (headers[idx] == 'mins') {
                         d = (new NBA.Time(d)).mmss();
