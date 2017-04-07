@@ -37,7 +37,7 @@ var quartersExposed = 4;
 
 window.selectGame = function(idx)
 {
-    if (idx < gamesList.length)
+    if (gamesList && idx < gamesList.length)
         window.location.hash = "#day=" + NBA.formatDate(new Date(gamesList[idx].gameTime)) + "#game=" + gamesList[idx].gameId;
 };
 
