@@ -11,13 +11,13 @@ function get(url, cb)
     req.onreadystatechange = function() {
         if (req.readyState == XMLHttpRequest.DONE) {
             if (req.status != 200) {
-                cb("Network error");
+                console.error("Network error", req.status);
             } else {
                 var parsed;
                 try {
                     parsed = JSON.parse(req.responseText);
                 } catch(err) {
-                    cb("JSON Parse error: " + err.toString());
+                    console.error("JSON Parse error: " + err.toString());
                     return;
                 }
                 cb(undefined, parsed);
