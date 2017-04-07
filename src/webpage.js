@@ -215,6 +215,11 @@ window.selectDay = function(day, game)
     });
 };
 
+window.today = function()
+{
+    window.location.hash = "";
+}
+
 function handleUrl()
 {
     // console.log("got a url", window.location);
@@ -306,9 +311,11 @@ document.onkeydown = function(e) {
         return;
     }
 
+
     switch (String.fromCharCode(e.keyCode).toLowerCase()) {
     case 'n': window.nextDay(); break;
     case 'p': window.prevDay(); break;
+    case 't': window.today(); break;
     case '0': window.selectGame(0); break;
     case '1': window.selectGame(1); break;
     case '2': window.selectGame(2); break;
