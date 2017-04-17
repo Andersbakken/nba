@@ -129,7 +129,7 @@ function Player(name, id)
     } else {
         var comma = name.lastIndexOf(', ');
         if (comma == -1) {
-            this.names = [name];
+            this.names = [ name ];
         } else {
             this.names = [ name.substr(comma + 2), name.substr(0, comma) ];
         }

@@ -291,53 +291,85 @@ fs.readdirSync(__dirname + "/www/").forEach((file) => {
     });
 });
 
-var season = NBA.currentSeasonName(); // ### The server has to restart between seasons
+function refreshSchedule()
+{
+    function work(resolve) {
+        return net.get({ url: `http://www.nba.com/data/10s/prod/v1/${NBA.currentSeasonYear() - 1}/schedule.json`, nocache: true }).then((response) => {
+            var parsed = safe.JSON.parse(response.body);
+
+            if (!parsed) {
+                throw new Error("Couldn't parse schedule " + response.url);
+                net.clearCache(response.url);
+                return undefined;
+            }
+            safe.fs.writeFileSync("/tmp/schedule.json", JSON.stringify(parsed, undefined, 4));
+
+            schedule = parsed.league.standard;
+            for (var idx=0; idx<schedule.length; ++idx) {
+                schedule[idx].gameTime = new Date(schedule[idx].startTimeUTC);
+                gamesById[schedule[idx].gameId] = schedule[idx];
+            }
+            if (resolve) {
+                resolve();
+            }
+            setTimeout(work, 60 * 60000); // refresh every hour
+        });
+    }
+    return new Promise((resolve) => { work(resolve); });
+    // console.log("Got responses", responses.length);
+}
+
 function refreshPlayerCache()
 {
     function work(resolve) {
-        net.get({url: `http://stats.nba.com/stats/commonallplayers/?LeagueId=00&Season=${season}&IsOnlyCurrentSeason=1`, validate: league.players != undefined })
-            .then(function(result) {
+        net.get({ url: `http://data.nba.net/data/10s/prod/v1/${NBA.currentSeasonYear() - 1}/players.json`, nocache: true })
+            .then((result) => {
                 if (result.statusCode == 200) {
                     var start = resolve && !league.players;
                     league.players = {};
                     if (!start) {
-                        league.forEachTeam(function(team) {
+                        league.forEachTeam((team) => {
                             team.players = {};
                         });
                     }
                     var data = JSON.parse(result.body);
-                    var resultSet0 = data.resultSets[0];
-                    var indexes = {};
-                    for (var i=0; i<resultSet0.headers.length; ++i) {
-                        indexes[resultSet0.headers[i]] = i;
-                    }
-                    resultSet0.rowSet.forEach((player) => {
-                        var p = new NBA.Player(player[indexes.DISPLAY_LAST_COMMA_FIRST], player[indexes.PERSON_ID]);
-                        league.players[p.id] = p;
-                        var team = player[indexes.TEAM_ABBREVIATION];
-                        if (team)
-                            league.find(team).players[p.id] = p;
+                    data.league.standard.forEach((player) => {
+                        var names = [];
+                        if (player.firstName)
+                            names.push(player.firstName);
+                        if (player.lastName)
+                            names.push(player.lastName);
 
+                        var p = new NBA.Player(names, player.personId);
+                        league.players[p.id] = p;
+                        if (player.teamId) {
+                            var team = league.find(player.teamId);
+                            if (team)
+                                team.players[p.id] = p;
+                        }
                     });
                     // console.log(`GOT ${Object.keys(league.players).length} PLAYERS`);
-                    safe.fs.writeFileSync(`/tmp/allplayers.json`, JSON.stringify(JSON.parse(result.body), undefined, 4));
-                    if (start)
+                    safe.fs.writeFileSync(`/tmp/players.json`, JSON.stringify(JSON.parse(result.body), undefined, 4));
+                    if (start) {
                         resolve();
+                    }
                 } else if (result.statusCode == 304) {
                     verbose("validated players");
                 } else {
-                    console.log("Can't get commonallplayers");
+                    console.log("Can't get players.json");
                 }
                 // setTimeout(refreshPlayerCache, 5 * 60 * 1000);
                 setTimeout(work, 60 * 60000); // refresh every hour
+            }).catch((error) => {
+                console.log("WTF", error.toString());
+                throw error;
             });
-
     }
     return new Promise(function(resolve) { work(resolve); });
 }
 
 var all = [
-    net.get('http://www.nba.com/data/10s/prod/v1/' + (NBA.currentSeasonYear() - 1) + '/schedule.json'),
+    refreshSchedule(),
     refreshPlayerCache()
 ];
 // league.forEachTeam(function(team) {
@@ -345,24 +377,6 @@ var all = [
 // });
 
 Promise.all(all).then(function(responses) {
-    var response = responses[0];
-    var parsed = safe.JSON.parse(response.body);
-
-    if (!parsed) {
-        throw new Error("Couldn't parse schedule " + response.url);
-        net.clearCache(response.url);
-        return undefined;
-    }
-    safe.fs.writeFileSync("/tmp/schedule.json", JSON.stringify(parsed, undefined, 4));
-
-    schedule = parsed.league.standard;
-    for (var idx=0; idx<schedule.length; ++idx) {
-        schedule[idx].gameTime = new Date(schedule[idx].startTimeUTC);
-        gamesById[schedule[idx].gameId] = schedule[idx];
-    }
-
-    // console.log("Got responses", responses.length);
-
     app.listen(httpPort, () => {
         console.log("Listening on port", httpPort);
     });
