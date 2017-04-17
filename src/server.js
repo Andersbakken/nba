@@ -42,12 +42,14 @@ function addIp(ip)
     safe.fs.writeFileSync("stats.json", JSON.stringify(current, null, 4));
 }
 
-letsEncrypt.register(opts).then(function (certs) {
-    console.log("got certs", certs);
-    // privkey, cert, chain, expiresAt, issuedAt, subject, altnames
-}, function (err) {
-    console.error("got lets encrypt error", err);
-});
+if (0) {
+    letsEncrypt.register(opts).then(function (certs) {
+        console.log("got certs", certs);
+        // privkey, cert, chain, expiresAt, issuedAt, subject, altnames
+    }, function (err) {
+        console.error("got lets encrypt error", err);
+    });
+}
 
 Log.init(argv);
 
@@ -292,16 +294,46 @@ fs.readdirSync(__dirname + "/www/").forEach((file) => {
 });
 
 var season = NBA.currentSeasonName(); // ### The server has to restart between seasons
+
+function refreshSchedule()
+{
+    function work(resolve) {
+        return net.get('http://www.nba.com/data/10s/prod/v1/' + (NBA.currentSeasonYear() - 1) + '/schedule.json').then((response) => {
+            var parsed = safe.JSON.parse(response.body);
+
+            if (!parsed) {
+                throw new Error("Couldn't parse schedule " + response.url);
+                net.clearCache(response.url);
+                return undefined;
+            }
+            safe.fs.writeFileSync("/tmp/schedule.json", JSON.stringify(parsed, undefined, 4));
+
+            schedule = parsed.league.standard;
+            for (var idx=0; idx<schedule.length; ++idx) {
+                schedule[idx].gameTime = new Date(schedule[idx].startTimeUTC);
+                gamesById[schedule[idx].gameId] = schedule[idx];
+            }
+            if (resolve) {
+                console.log("resolving");
+                resolve();
+            }
+            setTimeout(work, 60 * 60000); // refresh every hour
+        });
+    }
+    return new Promise((resolve) => { work(resolve); });
+    // console.log("Got responses", responses.length);
+}
+
 function refreshPlayerCache()
 {
     function work(resolve) {
         net.get({url: `http://stats.nba.com/stats/commonallplayers/?LeagueId=00&Season=${season}&IsOnlyCurrentSeason=1`, validate: league.players != undefined })
-            .then(function(result) {
+            .then((result) => {
                 if (result.statusCode == 200) {
                     var start = resolve && !league.players;
                     league.players = {};
                     if (!start) {
-                        league.forEachTeam(function(team) {
+                        league.forEachTeam((team) => {
                             team.players = {};
                         });
                     }
@@ -321,8 +353,10 @@ function refreshPlayerCache()
                     });
                     // console.log(`GOT ${Object.keys(league.players).length} PLAYERS`);
                     safe.fs.writeFileSync(`/tmp/allplayers.json`, JSON.stringify(JSON.parse(result.body), undefined, 4));
-                    if (start)
+                    if (start) {
+                        console.log("resolving");
                         resolve();
+                    }
                 } else if (result.statusCode == 304) {
                     verbose("validated players");
                 } else {
@@ -331,13 +365,12 @@ function refreshPlayerCache()
                 // setTimeout(refreshPlayerCache, 5 * 60 * 1000);
                 setTimeout(work, 60 * 60000); // refresh every hour
             });
-
     }
     return new Promise(function(resolve) { work(resolve); });
 }
 
 var all = [
-    net.get('http://www.nba.com/data/10s/prod/v1/' + (NBA.currentSeasonYear() - 1) + '/schedule.json'),
+    refreshSchedule(),
     refreshPlayerCache()
 ];
 // league.forEachTeam(function(team) {
@@ -345,24 +378,7 @@ var all = [
 // });
 
 Promise.all(all).then(function(responses) {
-    var response = responses[0];
-    var parsed = safe.JSON.parse(response.body);
-
-    if (!parsed) {
-        throw new Error("Couldn't parse schedule " + response.url);
-        net.clearCache(response.url);
-        return undefined;
-    }
-    safe.fs.writeFileSync("/tmp/schedule.json", JSON.stringify(parsed, undefined, 4));
-
-    schedule = parsed.league.standard;
-    for (var idx=0; idx<schedule.length; ++idx) {
-        schedule[idx].gameTime = new Date(schedule[idx].startTimeUTC);
-        gamesById[schedule[idx].gameId] = schedule[idx];
-    }
-
-    // console.log("Got responses", responses.length);
-
+    console.log("SHIT", responses);
     app.listen(httpPort, () => {
         console.log("Listening on port", httpPort);
     });
