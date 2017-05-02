@@ -45,9 +45,7 @@ Wants=network.target
 [Service]
 User=ubuntu
 Environment=NBA_SECRET=THESECRETFROMGITHUBGOESHERE
-Type=forking
-ExecStart=/usr/bin/tmux new-session -d -s nba-dvr /home/ubuntu/dev/nba/bin/run.sh -v
-Restart=always
+ExecStart=/home/ubuntu/dev/nba/bin/run.sh -v
 
 [Install]
 WantedBy=multi-user.target
