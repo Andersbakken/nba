@@ -190,7 +190,7 @@ function findGame(req, res, next) {
 
     var quarters = [];
     function getNextQuarter() {
-        return net.get(`http://data.nba.net/data/10s/prod/v1/${req.params.date}/${game.gameId}_pbp_${quarters.length + 1}.json`).then(function(data) {
+        return net.get({ url: `http://data.nba.net/data/10s/prod/v1/${req.params.date}/${game.gameId}_pbp_${quarters.length + 1}.json`, spoof: true }).then(function(data) {
             var gameFinished = false;
             if (data.statusCode != 200) {
                 done = true;
@@ -294,7 +294,7 @@ fs.readdirSync(__dirname + "/www/").forEach((file) => {
 function refreshSchedule()
 {
     function work(resolve) {
-        return net.get({ url: `http://www.nba.com/data/10s/prod/v1/${NBA.currentSeasonYear() - 1}/schedule.json`, nocache: true }).then((response) => {
+        return net.get({ url: `http://www.nba.com/data/10s/prod/v1/${NBA.currentSeasonYear() - 1}/schedule.json`, nocache: true, spoof: true }).then((response) => {
             var parsed = safe.JSON.parse(response.body);
 
             if (!parsed) {
@@ -322,7 +322,7 @@ function refreshSchedule()
 function refreshPlayerCache()
 {
     function work(resolve) {
-        net.get({ url: `http://data.nba.net/data/10s/prod/v1/${NBA.currentSeasonYear() - 1}/players.json`, nocache: true })
+        net.get({ url: `http://data.nba.net/data/10s/prod/v1/${NBA.currentSeasonYear() - 1}/players.json`, nocache: true, spoof: true })
             .then((result) => {
                 if (result.statusCode == 200) {
                     var start = resolve && !league.players;
@@ -372,9 +372,6 @@ var all = [
     refreshSchedule(),
     refreshPlayerCache()
 ];
-// league.forEachTeam(function(team) {
-//     all.push(net.get(`http://stats.nba.com/stats/commonteamroster/?TeamId=${team.id}&Season=${season}`));
-// });
 
 Promise.all(all).then(function(responses) {
     app.listen(httpPort, () => {

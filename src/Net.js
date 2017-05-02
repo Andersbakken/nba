@@ -30,6 +30,8 @@ function Net(options)
     this.requests = {};
 }
 
+// curl 'http://data.nba.net/data/10s/prod/v2/20170501/scoreboard.json' -H 'Origin: http://www.nba.com' -H 'Accept-Encoding: gzip, deflate, sdch' -H 'Accept-Language: en-US,en;q=0.8,nb;q=0.6' -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36' -H 'Accept: */*' -H 'Connection: keep-alive' -H 'If-Modified-Since: Tue, 02 May 2017 02:06:00 GMT' --compressed
+
 function Request(req, headers, filename, promise) {
     this.req = req;
     this.promises = [promise];
@@ -92,9 +94,13 @@ Net.prototype.get = function(req) {
         }
         if (this.requests[req.url]) {
             this.requests[req.url].promises.push(resolve);
+        } else {
+            if (req.spoof) {
+                req.headers['Origin'] = 'http://www.nba.com';
+                req.headers['User-Agent'] = 'Cool story browser';
+            }
+            this.requests[req.url] = new Request(req, headers, fileName, resolve);
         }
-
-        this.requests[req.url] = new Request(req, headers, fileName, resolve);
     });
 };
 
