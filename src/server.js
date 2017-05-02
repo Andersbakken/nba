@@ -42,12 +42,14 @@ function addIp(ip)
     safe.fs.writeFileSync("stats.json", JSON.stringify(current, null, 4));
 }
 
-letsEncrypt.register(opts).then(function (certs) {
-    console.log("got certs", certs);
-    // privkey, cert, chain, expiresAt, issuedAt, subject, altnames
-}, function (err) {
-    console.error("got lets encrypt error", err);
-});
+if (false) {
+    letsEncrypt.register(opts).then(function (certs) {
+        console.log("got certs", certs);
+        // privkey, cert, chain, expiresAt, issuedAt, subject, altnames
+    }, function (err) {
+        console.error("got lets encrypt error", err);
+    });
+}
 
 Log.init(argv);
 
