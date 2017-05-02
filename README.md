@@ -33,3 +33,5 @@ sudo setcap 'cap_net_bind_service=+ep' /usr/bin/nodejs
 # the webpage
 
 sudo dpkg-reconfigure tzdata
+
+should switch to http://data.nba.net/data/10s/prod/v1/2016/players.json
