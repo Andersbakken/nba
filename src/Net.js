@@ -96,8 +96,8 @@ Net.prototype.get = function(req) {
             this.requests[req.url].promises.push(resolve);
         } else {
             if (req.spoof) {
-                req.headers['Origin'] = 'http://www.nba.com';
-                req.headers['User-Agent'] = 'Cool story browser';
+                headers['Origin'] = 'http://www.nba.com';
+                headers['User-Agent'] = 'Cool story browser';
             }
             this.requests[req.url] = new Request(req, headers, fileName, resolve);
         }
