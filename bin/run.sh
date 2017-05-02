@@ -10,6 +10,7 @@ fi
 BROWSERIFY="browserify -o $DIR/../src/www/bundle.js $DIR/../src/webpage.js"
 eval $BROWSERIFY
 
+npm install
 while true; do
     rm -f log
     ./server.js --http-port 80 --https-port 444 -l ./server.log --deploy "$@" | tee log
