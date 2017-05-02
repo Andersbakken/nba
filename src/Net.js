@@ -73,22 +73,24 @@ Net.prototype.get = function(req) {
             req = { url: req };
         }
         var fileName = this.options.cacheDir + encodeURIComponent(req.url);
-        var contents = safe.fs.readFileSync(fileName, 'utf8');
         var headers = {};
-        if (contents) {
-            var data = safe.JSON.parse(contents);
-            if (!data) { // cache gone bad, repair
-                safe.fs.unlinkSync(fileName);
-                verbose("Net: cache is bad", req.url, fileName);
-            } else {
-                verbose("Net: Cache hit", req.url, fileName);
-                if (req.validate) {
-                    headers["If-Modified-Since"] = data.headers["Last-Modified"] || data.headers["last-modified"];
+        if (!req.nocache) {
+            var contents = safe.fs.readFileSync(fileName, 'utf8');
+            if (contents) {
+                var data = safe.JSON.parse(contents);
+                if (!data) { // cache gone bad, repair
+                    safe.fs.unlinkSync(fileName);
+                    verbose("Net: cache is bad", req.url, fileName);
                 } else {
-                    data.url = req.url;
-                    data.source = "cache";
-                    resolve(data);
-                    return;
+                    verbose("Net: Cache hit", req.url, fileName);
+                    if (req.validate) {
+                        headers["If-Modified-Since"] = data.headers["Last-Modified"] || data.headers["last-modified"];
+                    } else {
+                        data.url = req.url;
+                        data.source = "cache";
+                        resolve(data);
+                        return;
+                    }
                 }
             }
         }
