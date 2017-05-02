@@ -33,3 +33,24 @@ sudo setcap 'cap_net_bind_service=+ep' /usr/bin/nodejs
 # the webpage
 
 sudo dpkg-reconfigure tzdata
+
+sudo npm i -g browserify
+
+cat /etc/systemd/system/nbadvr.service
+<<
+[Unit]
+Description=NBA DVR Server
+Wants=network.target
+
+[Service]
+User=ubuntu
+Environment=NBA_SECRET=THESECRETFROMGITHUBGOESHERE
+Type=forking
+ExecStart=/usr/bin/tmux new-session -d -s nba-dvr /home/ubuntu/dev/nba/bin/run.sh -v
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
+>>
+sudo systemctl enable nbadvr.service
