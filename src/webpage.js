@@ -9,9 +9,11 @@ function get(url, cb)
     var req = new XMLHttpRequest();
     // req.addEventListener("load", cb);
     req.onreadystatechange = function() {
+        console.log("got something", req.readyState);
         if (req.readyState == XMLHttpRequest.DONE) {
             if (req.status != 200) {
                 console.error("Network error", req.status);
+                cb("bad status " + req.status);
             } else {
                 var parsed;
                 try {
@@ -130,6 +132,8 @@ function displayGame(gameId)
     });
 }
 
+window.loadGame = loadGame;
+
 function gameTimeForValue(value)
 {
     value = parseInt(value);
@@ -148,6 +152,7 @@ function sliderValueForGameTime(time)
     return (ms / maxMs) * 1000;
 }
 
+var refetching = false;
 window.changeTime = function(value) {
     var time = gameTimeForValue(value);
     if (value == 1000 && quartersExposed <= currentGame.length.quarter) {
@@ -155,18 +160,26 @@ window.changeTime = function(value) {
         document.getElementById("timeSlider").value = sliderValueForGameTime(time);
         window.displayTime(value);
     }
+    console.log(time.value, currentGame.length.value, currentGame.gameFinished);
     if (!currentGame.gameFinished && currentGame.length && time.value >= currentGame.length.value) {
-        loadGame(currentGame.id, function(error, result) {
-            console.log("reloading game");
-            currentGame = NBA.Game.decode(result, league);
-            if (time.value > currentGame.length.value) {
-                time = currentGame.length;
-                var sliderVal = sliderValueForGameTime(time);
-                document.getElementById("timeSlider").value = sliderVal;
-                window.displayTime(sliderVal);
-            }
-            renderBoxScore(time);
-        });
+        console.log("reloading");
+        if (!refetching) {
+            refetching = true;
+            loadGame(currentGame.id, function(error, result) {
+                refetching = false;
+                console.log("reloading game");
+                currentGame = NBA.Game.decode(result, league);
+                if (time.value > currentGame.length.value) {
+                    time = currentGame.length;
+                    var sliderVal = sliderValueForGameTime(time);
+                    document.getElementById("timeSlider").value = sliderVal;
+                    window.displayTime(sliderVal);
+                }
+                renderBoxScore(time);
+            });
+        } else {
+            console.log("not refetching");
+        }
     } else {
         renderBoxScore(time);
     }
@@ -295,7 +308,6 @@ document.onkeydown = function(e) {
             val = SliderMax;
         var value = "" + val;
         document.getElementById("timeSlider").value = value;
-        window.displayTime(value);
         window.changeTime(value);
     }
     switch (e.keyCode) {

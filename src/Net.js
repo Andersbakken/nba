@@ -68,6 +68,7 @@ function Request(req, headers, filename, promise) {
 }
 
 Net.prototype.get = function(req) {
+    console.log("requesting", req);
     return new Promise((resolve) => {
         if (!(req instanceof Object)) {
             req = { url: req };
@@ -101,6 +102,7 @@ Net.prototype.get = function(req) {
                 headers['Origin'] = 'http://www.nba.com';
                 headers['User-Agent'] = 'Cool story browser';
             }
+            console.log("getting shit", req.url);
             this.requests[req.url] = new Request(req, headers, fileName, resolve);
         }
     });
