@@ -308,6 +308,7 @@ document.onkeydown = function(e) {
             val = SliderMax;
         var value = "" + val;
         document.getElementById("timeSlider").value = value;
+        window.displayTime(value);
         window.changeTime(value);
     }
     switch (e.keyCode) {
