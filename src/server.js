@@ -192,7 +192,7 @@ function findGame(req, res, next) {
 
     var quarters = [];
     function getNextQuarter() {
-        return net.get({ url: `http://data.nba.net/data/10s/prod/v1/${req.params.date}/${game.gameId}_pbp_${quarters.length + 1}.json`, spoof: true, nocache: true }).then(function(data) {
+        return net.get({ url: `http://data.nba.net/data/10s/prod/v1/${req.params.date}/${game.gameId}_pbp_${quarters.length + 1}.json`, spoof: true }).then(function(data) {
             var gameFinished = false;
             if (data.statusCode != 200) {
                 done = true;

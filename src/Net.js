@@ -32,7 +32,7 @@ function Net(options)
 
 // curl 'http://data.nba.net/data/10s/prod/v2/20170501/scoreboard.json' -H 'Origin: http://www.nba.com' -H 'Accept-Encoding: gzip, deflate, sdch' -H 'Accept-Language: en-US,en;q=0.8,nb;q=0.6' -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36' -H 'Accept: */*' -H 'Connection: keep-alive' -H 'If-Modified-Since: Tue, 02 May 2017 02:06:00 GMT' --compressed
 
-function Request(req, headers, filename, promise) {
+function Request(req, headers, filename, promise, net) {
     this.req = req;
     this.promises = [promise];
 
@@ -44,16 +44,16 @@ function Request(req, headers, filename, promise) {
     verbose("Net: Actually requesting", JSON.stringify(options));
 
     request(options, (error, response, body) => {
+        delete net.requests[req.url];
         verbose("Net: Got response", response.statusCode, req.url);
         if (error) {
-            throw new Error("Got error: " + error.toString());
-            return;
+            log("Got error: " + error.toString());
         }
 
         var data = {
-            headers: response.headers,
+            headers: response ? response.headers : {},
             body: body,
-            statusCode: response.statusCode
+            statusCode: response ? response.statusCode : 500
         };
 
         if (response.statusCode == 200 && !req.nocache) {
@@ -97,13 +97,14 @@ Net.prototype.get = function(req) {
         }
         if (this.requests[req.url]) {
             this.requests[req.url].promises.push(resolve);
+            verbose("Tacked on to request");
         } else {
             if (req.spoof) {
                 headers['Origin'] = 'http://www.nba.com';
                 headers['User-Agent'] = 'Cool story browser';
             }
             console.log("getting shit", req.url);
-            this.requests[req.url] = new Request(req, headers, fileName, resolve);
+            this.requests[req.url] = new Request(req, headers, fileName, resolve, this);
         }
     });
 };
