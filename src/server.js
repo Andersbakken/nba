@@ -112,10 +112,8 @@ function gamesByDate(req, res, next) {
         return l.gameTime.valueOf() - r.gameTime.valueOf();
     });
     req.games = [];
-    if (idx < schedule.length) {
-        do {
-            req.games.push(formatGame(schedule[idx]));
-        } while (++idx < schedule.length && schedule[idx].gameTime.getDate() == date.getDate());
+    while (idx < schedule.length && schedule[idx].gameTime.getDate() == date.getDate()) {
+        req.games.push(formatGame(schedule[idx++]));
     }
     next();
 }
