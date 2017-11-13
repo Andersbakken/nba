@@ -51,7 +51,7 @@ function nowPST()
 window.selectGame = function(idx)
 {
     if (gamesList && idx < gamesList.length)
-        window.location.hash = "#day=" + NBA.formatDate(pstDate(gamesList[idx].gameTime)) + "#game=" + gamesList[idx].gameId;
+        window.location.hash = "#day=" + NBA.formatDate(pstDate(new Date(gamesList[idx].gameTime))) + "#game=" + gamesList[idx].gameId;
 };
 
 function renderBoxScore(time)
@@ -63,7 +63,7 @@ function renderBoxScore(time)
     // var idx = 0;
     // var html = "";
     // for (var i=0; i<gamesList.length; ++i) {
-    //     html += '<a href="#" onclick="selectGame(' + i + ')">' + gamesList[i].away + '@' + gamesList[i].home + ' ' + pstDate(gamesList[i].gameTime.toLocaleString()) + '</a><br><br/>';
+    //     html += '<a href="#" onclick="selectGame(' + i + ')">' + gamesList[i].away + '@' + gamesList[i].home + ' ' + pstDate(new Date(gamesList[i].gameTime.toLocaleString())) + '</a><br><br/>';
     // }
     // document.getElementById("games").innerHTML = html;
     // console.log(error, result);
