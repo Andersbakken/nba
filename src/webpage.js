@@ -41,7 +41,7 @@ function nowPST()
 {
     var now = new Date();
     var offset = now.getTimezoneOffset();
-    return new Date((now.getTime(), + (offset - 480)) * 60000);
+    return new Date(now.getTime() + ((offset - 480) * 60000));
 }
 
 window.selectGame = function(idx)
