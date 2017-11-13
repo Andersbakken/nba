@@ -230,7 +230,7 @@ window.selectDay = function(day, game)
             var key = i;
             if (key >= 10)
                 key = String.fromCharCode((i - 10) + 'a'.charCodeAt(0));
-            html += '<a href="javascript:selectGame(' + i + ')">' + key + ": " + gamesList[i].away + '@' + gamesList[i].home + ' ' + pstDate(Date(gamesList[i].gameTime.toLocaleString()) + '</a><br><br/>';
+            html += '<a href="javascript:selectGame(' + i + ')">' + key + ": " + gamesList[i].away + '@' + gamesList[i].home + ' ' + pstDate(new Date(gamesList[i].gameTime.toLocaleString()) + '</a><br><br/>';
         }
         document.getElementById("games").innerHTML = html;
         if (game)
