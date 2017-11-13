@@ -37,6 +37,13 @@ var league = new NBA.League;
 var currentGame;
 var quartersExposed = 4;
 
+function today()
+{
+    var now = new Date();
+    var offset = now.getTimezoneOffset();
+    return new Date((now.getTime(), + (offset - 480)) * 60000);
+}
+
 window.selectGame = function(idx)
 {
     if (gamesList && idx < gamesList.length)
@@ -254,13 +261,13 @@ function handleUrl()
         }
     });
     if (!day) {
-        window.location.hash = "#day=" + NBA.formatDate(new Date());
+        window.location.hash = "#day=" + NBA.formatDate(today());
         return;
     }
     var match = /(^[0-9][0-9][0-9][0-9])([0-9][0-9])([0-9][0-9])$/.exec(day);
     if (!day) {
         console.error("Invalid date", day);
-        window.location.hash = "#day=" + NBA.formatDate(new Date());
+        window.location.hash = "#day=" + NBA.formatDate(today());
         return;
     }
     // console.log("shitbitch", match, day);
