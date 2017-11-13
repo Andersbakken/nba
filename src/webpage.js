@@ -37,17 +37,21 @@ var league = new NBA.League;
 var currentGame;
 var quartersExposed = 4;
 
+function pstDate(date)
+{
+    var offset = date.getTimezoneOffset();
+    return new Date(date.getTime() + ((offset - 480) * 60000));
+}
+
 function nowPST()
 {
-    var now = new Date();
-    var offset = now.getTimezoneOffset();
-    return new Date(now.getTime() + ((offset - 480) * 60000));
+    return pstDate(new Date());
 }
 
 window.selectGame = function(idx)
 {
     if (gamesList && idx < gamesList.length)
-        window.location.hash = "#day=" + NBA.formatDate(new Date(gamesList[idx].gameTime)) + "#game=" + gamesList[idx].gameId;
+        window.location.hash = "#day=" + NBA.formatDate(pstDate(gamesList[idx].gameTime)) + "#game=" + gamesList[idx].gameId;
 };
 
 function renderBoxScore(time)
@@ -59,7 +63,7 @@ function renderBoxScore(time)
     // var idx = 0;
     // var html = "";
     // for (var i=0; i<gamesList.length; ++i) {
-    //     html += '<a href="#" onclick="selectGame(' + i + ')">' + gamesList[i].away + '@' + gamesList[i].home + ' ' + new Date(gamesList[i].gameTime.toLocaleString()) + '</a><br><br/>';
+    //     html += '<a href="#" onclick="selectGame(' + i + ')">' + gamesList[i].away + '@' + gamesList[i].home + ' ' + pstDate(gamesList[i].gameTime.toLocaleString()) + '</a><br><br/>';
     // }
     // document.getElementById("games").innerHTML = html;
     // console.log(error, result);
@@ -226,7 +230,7 @@ window.selectDay = function(day, game)
             var key = i;
             if (key >= 10)
                 key = String.fromCharCode((i - 10) + 'a'.charCodeAt(0));
-            html += '<a href="javascript:selectGame(' + i + ')">' + key + ": " + gamesList[i].away + '@' + gamesList[i].home + ' ' + new Date(gamesList[i].gameTime.toLocaleString()) + '</a><br><br/>';
+            html += '<a href="javascript:selectGame(' + i + ')">' + key + ": " + gamesList[i].away + '@' + gamesList[i].home + ' ' + pstDate(Date(gamesList[i].gameTime.toLocaleString()) + '</a><br><br/>';
         }
         document.getElementById("games").innerHTML = html;
         if (game)
