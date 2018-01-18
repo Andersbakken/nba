@@ -284,12 +284,7 @@ app.get("/", (req, res) => {
     res.redirect("/index.html");
 });
 
-fs.readdirSync(__dirname + "/www/").forEach((file) => {
-    app.get("/" + file, (req, res) => {
-        res.contentType(file);
-        fs.createReadStream(__dirname + "/www/" + file).pipe(res);
-    });
-});
+app.use(express.static('www'));
 
 function refreshSchedule()
 {
