@@ -309,7 +309,7 @@ window.onload = function() {
     handleUrl();
 };
 
-function changeSliderBy(amount) {
+window.changeSliderBy = function(amount) {
     var val = parseInt(document.getElementById("timeSlider").value);
     val += amount;
     if (val < 0)
