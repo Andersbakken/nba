@@ -77,6 +77,9 @@ var league = new NBA.League;
 var app = express();
 app.use((req, res, next) => {
     addIp(req.connection.remoteAddress);
+    if (req.url.indexOf('.mp3') != -1) {
+        fs.appendFileSync("mp3.list", `${req.url} - ${(new Date()).toString()} - ${req.connection.remoteAddress}\n`);
+    }
     next();
 });
 app.use('/', letsEncrypt.middleware());
