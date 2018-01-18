@@ -341,6 +341,8 @@ document.onkeydown = function(e) {
     case 'n': window.nextDay(); break;
     case 'p': window.prevDay(); break;
     case 't': window.today(); break;
+    case 'B': window.changeSliderBy(-10); break;
+    case 'F': window.changeSliderBy(10); break;
     case '0': window.selectGame(0); break;
     case '1': window.selectGame(1); break;
     case '2': window.selectGame(2); break;
