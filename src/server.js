@@ -14,6 +14,7 @@ const Net = require('./Net.js');
 const bsearch = require('binary-search');
 const GameParser = require('./GameParser.js');
 const bodyParser = require('body-parser');
+const serveIndex = require('serve-index');
 const greenlock = require('greenlock');
 const Log = require('./Log.js');
 const log = Log.log;
@@ -284,7 +285,7 @@ app.get("/", (req, res) => {
     res.redirect("/index.html");
 });
 
-app.use(express.static('www'));
+app.use('/www', express.static('/'), serveIndex('/', {'icons': true}));
 
 function refreshSchedule()
 {
