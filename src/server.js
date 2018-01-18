@@ -285,7 +285,10 @@ app.get("/", (req, res) => {
     res.redirect("/index.html");
 });
 
-app.use('/www', express.static('/'), serveIndex('/', {'icons': true}));
+// console.log(
+// app.use(express.static('www'));
+// console.log(`${__dirname}/www`);
+app.use('/', express.static("www"), serveIndex("www", {'icons': true}));
 
 function refreshSchedule()
 {
