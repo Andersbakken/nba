@@ -13,3 +13,8 @@ tr td {
     padding: 0 !important;
     margin: 0 !important;
 }
+
+body {
+    margin: 10;
+    padding: 10;
+}
