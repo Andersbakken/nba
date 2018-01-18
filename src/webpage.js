@@ -309,19 +309,20 @@ window.onload = function() {
     handleUrl();
 };
 
+function changeSliderBy(amount) {
+    var val = parseInt(document.getElementById("timeSlider").value);
+    val += amount;
+    if (val < 0)
+        val = 0;
+    if (val > SliderMax)
+        val = SliderMax;
+    var value = "" + val;
+    document.getElementById("timeSlider").value = value;
+    window.displayTime(value);
+    window.changeTime(value);
+}
+
 document.onkeydown = function(e) {
-    function changeSliderBy(amount) {
-        var val = parseInt(document.getElementById("timeSlider").value);
-        val += amount;
-        if (val < 0)
-            val = 0;
-        if (val > SliderMax)
-            val = SliderMax;
-        var value = "" + val;
-        document.getElementById("timeSlider").value = value;
-        window.displayTime(value);
-        window.changeTime(value);
-    }
     switch (e.keyCode) {
     case 37: // left
         if (currentGame) {
