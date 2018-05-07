@@ -1,0 +1,83 @@
+<html>
+  <head>
+     <script src="//code.jquery.com/jquery-3.2.1.min.js"></script>
+     <script src="//code.jquery.com/mobile/1.5.0-alpha.1/jquery.mobile-1.5.0-alpha.1.min.js"></script>
+  <!-- <script src="http://code.jquery.com/jquery-3.3.1.min.js"></script> -->
+  <!-- <script src="http://code.jquery.com/mobile/1.5.0-alpha.1/jquery.mobile-1.5.0-alpha.1.min.js"></script>
+    -->
+  <style>
+  </style>
+</head>
+<body width="100%">
+    <img id="viewer" src="" width="100%"/>
+    <div id="info"></div>
+<script>
+$(function() {
+
+    var baseUrl = "/garden/";
+    var pictureIndex = 0;
+    var pictures = [];
+
+    function name(path) {
+        var filename = path.substring(path.lastIndexOf('/') + 1, path.length - 4);
+        <!-- console.log("filename", decodeURIComponent(filename)); -->
+        return decodeURIComponent(filename);
+        // return decodeURIComponent(path.substr(path.lastIndexOf('/') + 1, path.length - 4));
+    }
+
+    function getFiles() {
+        $.ajax(baseUrl).done(function(data) {
+            pictures = [];
+            $(data).find("a[href]").each(function() {
+                var href = $(this).attr('href');
+        if (href.indexOf('.jpg') > 0 || href.indexOf('.png') > 0 || href.indexOf('.jpeg') > 0) {
+                    pictures.push(href);
+                }
+            });
+            pictures.sort(function(a, b) {
+                function toMS(val) {
+                    return new Date(name(val)).valueOf();
+                }
+                return toMS(a) - toMS(b);
+            });
+            console.log(pictures.length + " pictures loaded!");
+            changePicture(-1);
+        });
+    }
+
+    function changePicture(indexOffset) {
+        pictureIndex += indexOffset;
+        if (pictureIndex >= pictures.length) {
+            pictureIndex = 0;
+        } else if (pictureIndex < 0) {
+            pictureIndex = pictures.length - 1;
+        }
+        $('#viewer').attr('src', pictures[pictureIndex]);
+        $('#info').text((pictureIndex + 1) + "/" + pictures.length + " " + name(pictures[pictureIndex]));
+    }
+
+    $.mobile.loading("hide");
+
+    function swipeLeft() {
+        changePicture(1);
+    }
+
+    function swipeRight() {
+        changePicture(-1);
+    }
+
+    $("#viewer").on("swipeleft", swipeLeft);
+    $("#viewer").on("swiperight", swipeRight);
+    getFiles();
+    $(document).keydown(function(e){
+        var left = -1, right = 1;
+        if (e.keyCode == 37) {
+            changePicture(left); return false;
+        } else if (e.keyCode == 39) {
+            changePicture(right); return false;
+        }
+    });
+});
+</script>
+</body>
+</html>
