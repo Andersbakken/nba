@@ -43,3 +43,5 @@ src/cache/*
 /src/www/bundle.js
 /src/~/
 /src/stats.json
+/src/www/garden/*.jpg
+/src/www/garden/timelapse*mp4
