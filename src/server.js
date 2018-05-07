@@ -288,6 +288,26 @@ app.get("/", (req, res) => {
     res.redirect("/index.html");
 });
 
+app.get("/garden/", (req, res) => {
+    res.redirect("/garden/index.html");
+});
+
+app.get("/gardenlist", (req, res) => {
+    var files = fs.readdirSync("www/garden")
+        .filter((file) => {
+            return file.lastIndexOf('.jpg') == file.length - 4;
+        })
+        .map((file) => {
+            var name = file.substring(0, file.length - 4);
+            return { name: name, date: new Date(name).valueOf(), href: "/garden/" + name + ".jpg" };
+        })
+        .sort((a, b) => {
+            return a.date - b.date;
+        });
+
+    res.send(JSON.stringify(files) + "\n");
+});
+
 // console.log(
 // app.use(express.static('www'));
 // console.log(`${__dirname}/www`);
