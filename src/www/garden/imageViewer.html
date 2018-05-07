@@ -6,11 +6,16 @@
   <!-- <script src="http://code.jquery.com/mobile/1.5.0-alpha.1/jquery.mobile-1.5.0-alpha.1.min.js"></script>
     -->
   <style>
+    div {
+        font-size: 30px;
+    }
+
   </style>
 </head>
 <body width="100%">
-    <img id="viewer" src="" width="100%"/>
     <div id="info"></div>
+    <div id="name"></div>
+    <img id="viewer" src="" width="100%"/>
 <script>
 $(function() {
 
@@ -55,7 +60,8 @@ $(function() {
             pictureIndex = pictures.length - 1;
         }
         $('#viewer').attr('src', pictures[pictureIndex]);
-        $('#info').text((pictureIndex + 1) + "/" + pictures.length + " " + name(pictures[pictureIndex]));
+        $('#info').text((pictureIndex + 1) + "/" + pictures.length);
+        $('#name').text(name(pictures[pictureIndex]));
     }
 
     function swipeLeft() {
