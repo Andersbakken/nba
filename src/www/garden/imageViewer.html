@@ -41,6 +41,8 @@ $(function() {
                 return toMS(a) - toMS(b);
             });
             console.log(pictures.length + " pictures loaded!");
+            $.mobile.loading("hide");
+            $.mobile.loading().hide();
             changePicture(-1);
         });
     }
@@ -55,8 +57,6 @@ $(function() {
         $('#viewer').attr('src', pictures[pictureIndex]);
         $('#info').text((pictureIndex + 1) + "/" + pictures.length + " " + name(pictures[pictureIndex]));
     }
-
-    $.mobile.loading("hide");
 
     function swipeLeft() {
         changePicture(1);
