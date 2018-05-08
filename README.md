@@ -37,7 +37,6 @@ sudo dpkg-reconfigure tzdata
 sudo npm i -g browserify
 
 cat /etc/systemd/system/nbadvr.service
-<<
 [Unit]
 Description=NBA DVR Server
 Wants=network.target
@@ -50,5 +49,6 @@ ExecStart=/home/ubuntu/dev/nba/bin/run.sh -v
 [Install]
 WantedBy=multi-user.target
 
->>
 sudo systemctl enable nbadvr.service
+
+### should switch to http://data.nba.net/data/10s/prod/v1/2016/players.json
