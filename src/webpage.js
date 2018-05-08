@@ -48,10 +48,18 @@ function nowPST()
     return pstDate(new Date());
 }
 
+function dateHash(date)
+{
+    var now = nowPST();
+    if (date.getDate() == now.getDate() && date.getMonth() == now.getMonth() && date.getYear() == now.getYear())
+        return "";
+    return "#day=" + NBA.formatDate(date);
+}
+
 window.selectGame = function(idx)
 {
     if (gamesList && idx < gamesList.length)
-        window.location.hash = "#day=" + NBA.formatDate(pstDate(new Date(gamesList[idx].gameTime))) + "#game=" + gamesList[idx].gameId;
+        window.location.hash = dateHash(pstDate(new Date(gamesList[idx].gameTime))) + "#game=" + gamesList[idx].gameId;
 };
 
 function renderBoxScore(time)
@@ -264,18 +272,18 @@ function handleUrl()
             }
         }
     });
+    var date;
     if (!day) {
-        window.location.hash = "#day=" + NBA.formatDate(nowPST());
-        return;
-    }
-    var match = /(^[0-9][0-9][0-9][0-9])([0-9][0-9])([0-9][0-9])$/.exec(day);
-    if (!day) {
-        console.error("Invalid date", day);
-        window.location.hash = "#day=" + NBA.formatDate(nowPST());
-        return;
+        date = nowPST();
+    } else {
+        var match = /(^[0-9][0-9][0-9][0-9])([0-9][0-9])([0-9][0-9])$/.exec(day);
+        if (!day) {
+            console.error("Invalid date", day);
+            date = nowPST();
+        }
+        date = new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
     }
     // console.log("shitbitch", match, day);
-    var date = new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
     if (!curDay || date.valueOf() != curDay.valueOf()) {
         window.selectDay(date, game);
         return;
@@ -290,12 +298,12 @@ window.onhashchange = handleUrl;
 window.nextDay = function()
 {
     var date = addDays(curDay, 1);
-    window.location.hash = "#day=" + NBA.formatDate(date);
+    window.location.hash = dateHash(date);
 };
 
 window.prevDay = function()
 {
-    window.location.hash = "#day=" + NBA.formatDate(addDays(curDay, -1));
+    window.location.hash = dateHash(addDays(curDay, -1));
 };
 
 function addDays(date, days)
