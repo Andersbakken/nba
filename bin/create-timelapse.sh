@@ -6,7 +6,7 @@ rm -rf tmp
 mkdir tmp
 cd tmp
 echo 1 > idx
-find -maxdepth 1 .. -name "*.jpg" | sort | while read i; do
+find .. -maxdepth 1 -name "*.jpg" | sort | while read i; do
     IDX=`cat idx`
     # echo $IDX
     ln -s "$i" "$(printf %05d ${IDX}).jpg"
