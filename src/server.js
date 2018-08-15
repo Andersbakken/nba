@@ -295,7 +295,7 @@ app.get("/garden/", (req, res) => {
 app.get("/gardenlist", (req, res) => {
     var files = fs.readdirSync("www/garden")
         .filter((file) => {
-            return file.lastIndexOf('.jpg') == file.length - 4;
+            return file.length > 4 && file.lastIndexOf('.jpg') == file.length - 4;
         })
         .map((file) => {
             var name = file.substring(0, file.length - 4);
