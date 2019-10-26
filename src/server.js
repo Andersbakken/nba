@@ -15,7 +15,6 @@ const bsearch = require('binary-search');
 const GameParser = require('./GameParser.js');
 const bodyParser = require('body-parser');
 const serveIndex = require('serve-index');
-const greenlock = require('greenlock');
 const Log = require('./Log.js');
 const log = Log.log;
 const verbose = Log.verbose;
