@@ -316,7 +316,7 @@ app.use('/', express.static("www"), serveIndex("www", {'icons': true}));
 function refreshSchedule()
 {
     function work(resolve) {
-        return net.get({ url: `http://www.nba.com/data/10s/prod/v1/${NBA.currentSeasonYear() - 1}/schedule.json`, nocache: true, spoof: true }).then((response) => {
+        return net.get({ url: `http://data.nba.net/data/10s/prod/v1/${NBA.currentSeasonYear() - 1}/schedule.json`, nocache: true, spoof: true }).then((response) => {
             var parsed = safe.JSON.parse(response.body);
 
             if (!parsed) {
