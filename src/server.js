@@ -44,7 +44,6 @@ function addIp(ip)
 Log.init(argv);
 
 const httpPort = argv["http-port"] || 8899;
-const httpsPort = argv["https-port"] || 8898;
 
 const lowerBound = function(haystack, needle, comparator) {
     var idx = bsearch(haystack, needle, comparator);
