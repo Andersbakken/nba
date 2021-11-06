@@ -275,6 +275,10 @@ app.get("/", (req, res) => {
     res.redirect("/index.html");
 });
 
+app.get("/predictions", (req, res) => {
+    res.redirect("/predictions/index.html");
+});
+
 app.get("/garden/", (req, res) => {
     res.redirect("/garden/index.html");
 });
