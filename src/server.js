@@ -20,7 +20,6 @@ const Log = require('./Log.js');
 const log = Log.log;
 const verbose = Log.verbose;
 const fatal = Log.fatal;
-var letsEncrypt = greenlock.create({ server: 'staging' });
 
 var opts = {
     domains: ['nbadvr.com'],
@@ -41,15 +40,6 @@ function addIp(ip)
     }
 
     safe.fs.writeFileSync("stats.json", JSON.stringify(current, null, 4));
-}
-
-if (false) {
-    letsEncrypt.register(opts).then(function (certs) {
-        console.log("got certs", certs);
-        // privkey, cert, chain, expiresAt, issuedAt, subject, altnames
-    }, function (err) {
-        console.error("got lets encrypt error", err);
-    });
 }
 
 Log.init(argv);
@@ -82,7 +72,6 @@ app.use((req, res, next) => {
     }
     next();
 });
-app.use('/', letsEncrypt.middleware());
 app.use(bodyParser.json());
 var net = new Net({cacheDir: (argv.cacheDir || __dirname + "/cache/"), clear: (argv.C || argv["clear-cache"]) });
 
