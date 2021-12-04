@@ -1,23 +1,23 @@
 const teams = {
-    West: ["DAL", "DEN", "GSW", "HOU", "LAC", "LAL", "MEM", "MIN", "NOP", "OKC", "PHO", "POR", "SAC", "SAS", "UTA"],
+    West: ["DAL", "DEN", "GSW", "HOU", "LAC", "LAL", "MEM", "MIN", "NOP", "OKC", "PHX", "POR", "SAC", "SAS", "UTA"],
     East: ["ATL", "BKN", "BOS", "CHA", "CHI", "CLE", "DET", "IND", "MIA", "MIL", "NYK", "ORL", "PHI", "TOR", "WAS"]
 };
 
 const contestants = {
     Anders: {
-        West: ["DEN", "UTA", "GSW", "LAL", "PHO", "DAL", "POR", "LAC", "MEM", "NOP", "SAC", "OKC", "MIN", "SAS", "HOU"],
+        West: ["DEN", "UTA", "GSW", "LAL", "PHX", "DAL", "POR", "LAC", "MEM", "NOP", "SAC", "OKC", "MIN", "SAS", "HOU"],
         East: ["BKN", "MIL", "PHI", "ATL", "MIA", "NYK", "BOS", "CHI", "CHA", "IND", "DET", "WAS", "ORL", "TOR", "CLE"]
     },
     Magnus: {
-        West: ["LAL", "UTA", "GSW", "DEN", "PHO", "POR", "LAC", "DAL", "MEM", "NOP", "MIN", "SAS", "SAC", "OKC", "HOU"],
+        West: ["LAL", "UTA", "GSW", "DEN", "PHX", "POR", "LAC", "DAL", "MEM", "NOP", "MIN", "SAS", "SAC", "OKC", "HOU"],
         East: ["BKN", "MIL", "PHI", "BOS", "ATL", "NYK", "MIA", "IND", "CHI", "WAS", "TOR", "DET", "CHA", "CLE", "ORL"]
     },
     Kim: {
-        West: ["UTA", "PHO", "LAL", "DAL", "DEN", "GSW", "LAC", "NOP", "MEM", "MIN", "POR", "SAC", "SAS", "HOU", "OKC"],
+        West: ["UTA", "PHX", "LAL", "DAL", "DEN", "GSW", "LAC", "NOP", "MEM", "MIN", "POR", "SAC", "SAS", "HOU", "OKC"],
         East: ["MIL", "BOS", "BKN", "MIA", "ATL", "NYK", "PHI", "CHA", "CHI", "IND", "TOR", "WAS", "CLE", "DET", "ORL"]
     },
     Henrik: {
-        West: ["PHO", "UTA", "DAL", "LAL", "DEN", "GSW", "MEM", "POR", "LAC", "NOP", "SAS", "MIN", "SAC", "OKC", "HOU"],
+        West: ["PHX", "UTA", "DAL", "LAL", "DEN", "GSW", "MEM", "POR", "LAC", "NOP", "SAS", "MIN", "SAC", "OKC", "HOU"],
         East: ["MIL", "BOS", "PHI", "BKN", "NYK", "MIA", "ATL", "CHI", "IND", "TOR", "CHA", "WAS", "CLE", "DET", "ORL"]
     }
 };
