@@ -21,8 +21,8 @@ const contestants = {
         West: ["GSW", "MIN", "LAC", "MEM", "PHX", "DEN", "DAL", "NOP", "LAL", "SAC", "POR", "OKC", "HOU", "UTA", "SAS"]
     },
     Jameel: {
-        East: ["PHI", "BKN", "MIL", "BOS", "CLE", "MIA", "ATL", "CHI", "WAS", "NYK", "CHA", "DET", "ORL", "IND", "TOR"],
-        West: ["LAC", "DEN", "GSW", "MIN", "NOP", "LAL", "MEM", "DAL", "SAC", "POR", "OKC", "HOU", "UTA", "SAS", "PHX"]
+        East: ["PHI", "BKN", "MIL", "BOS", "CLE", "MIA", "ATL", "CHI", "TOR", "WAS", "NYK", "CHA", "DET", "ORL", "IND"],
+        West: ["LAC", "DEN", "GSW", "MIN", "NOP", "LAL", "PHX", "MEM", "DAL", "SAC", "POR", "OKC", "HOU", "UTA", "SAS"]
     }
 };
 
