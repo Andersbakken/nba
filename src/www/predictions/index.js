@@ -5,20 +5,24 @@ const teams = {
 
 const contestants = {
     Anders: {
-        West: ["DEN", "UTA", "GSW", "LAL", "PHX", "DAL", "POR", "LAC", "MEM", "NOP", "SAC", "OKC", "MIN", "SAS", "HOU"],
-        East: ["BKN", "MIL", "PHI", "ATL", "MIA", "NYK", "BOS", "CHI", "CHA", "IND", "DET", "WAS", "ORL", "TOR", "CLE"]
+        East: ["MIL", "PHI", "BOS", "BKN", "MIA", "TOR", "CLE", "ATL", "NYK", "CHI", "CHA", "DET", "WAS", "ORL", "IND"],
+        West: ["GSW", "LAC", "DEN", "MIN", "MEM", "PHX", "NOP", "DAL", "SAC", "LAL", "POR", "HOU", "OKC", "UTA", "SAS"]
     },
     Magnus: {
-        West: ["LAL", "UTA", "GSW", "DEN", "PHX", "POR", "LAC", "DAL", "MEM", "NOP", "MIN", "SAS", "SAC", "OKC", "HOU"],
-        East: ["BKN", "MIL", "PHI", "BOS", "ATL", "NYK", "MIA", "IND", "CHI", "WAS", "TOR", "DET", "CHA", "CLE", "ORL"]
+        East: ["BOS", "MIL", "PHI", "BKN", "CLE", "MIA", "CHI", "ATL", "TOR", "CHA", "NYK", "WAS", "DET", "ORL", "IND"],
+        West: ["GSW", "LAC", "PHX", "MIN", "MEM", "DEN", "DAL", "NOP", "LAL", "POR", "SAC", "OKC", "HOU", "SAS", "UTA"]
     },
     Kim: {
-        West: ["UTA", "PHX", "LAL", "DAL", "DEN", "GSW", "LAC", "NOP", "MEM", "MIN", "POR", "SAC", "SAS", "HOU", "OKC"],
-        East: ["MIL", "BOS", "BKN", "MIA", "ATL", "NYK", "PHI", "CHA", "CHI", "IND", "TOR", "WAS", "CLE", "DET", "ORL"]
+        East: ["MIL", "PHI", "MIA", "BOS", "BKN", "CLE", "ATL", "TOR", "CHI", "NYK", "WAS", "DET", "IND", "ORL", "CHA"],
+        West: ["MIN", "GSW", "LAC", "PHX", "MEM", "DEN", "NOP", "DAL", "LAL", "POR", "SAC", "HOU", "OKC", "SAS", "UTA"]
     },
     Henrik: {
-        West: ["PHX", "UTA", "DAL", "LAL", "DEN", "GSW", "MEM", "POR", "LAC", "NOP", "SAS", "MIN", "SAC", "OKC", "HOU"],
-        East: ["MIL", "BOS", "PHI", "BKN", "NYK", "MIA", "ATL", "CHI", "IND", "TOR", "CHA", "WAS", "CLE", "DET", "ORL"]
+        East: ["PHI", "MIL", "BOS", "BKN", "CLE", "MIA", "ATL", "TOR", "CHI", "NYK", "DET", "WAS", "CHA", "ORL", "IND"],
+        West: ["GSW", "MIN", "LAC", "MEM", "PHX", "DEN", "DAL", "NOP", "LAL", "SAC", "POR", "OKC", "HOU", "UTA", "SAS"]
+    },
+    Jameel: {
+        East: ["PHI", "BKN", "MIL", "BOS", "CLE", "MIA", "ATL", "CHI", "WAS", "NYK", "CHA", "DET", "ORL", "IND", "TOR"],
+        West: ["LAC", "DEN", "GSW", "MIN", "NOP", "LAL", "MEM", "DAL", "SAC", "POR", "OKC", "HOU", "UTA", "SAS", "PHX"]
     }
 };
 
