@@ -118,13 +118,17 @@ function processResponse(conf, response, table, final) {
 function init() {
     const eastTable = document.getElementById("east");
     const westTable = document.getElementById("west");
-    fetch("https://data.nba.net/10s/prod/v1/current/standings_conference.json")
+    fetch("/standings")
         .then((response) => {
             return response.json();
         })
         .then((response) => {
-            processResponse("East", response.league.standard.conference.east, eastTable);
-            processResponse("West", response.league.standard.conference.west, westTable, true);
+            processResponse("East", response.east, eastTable);
+            processResponse("West", response.west, westTable, true);
+        })
+        .catch((err) => {
+            console.error("Failed to fetch", err);
+            console.error(err);
         });
     // console.log(table);
 }

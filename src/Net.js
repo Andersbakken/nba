@@ -1,9 +1,9 @@
 /* global require, module */
 
-var safe = require('safetydance');
-var fs = require('fs-extra');
-var request = require('request');
-var Log = require('./Log.js');
+var safe = require("safetydance");
+var fs = require("fs-extra");
+var request = require("request");
+var Log = require("./Log.js");
 var log = Log.log;
 var verbose = Log.verbose;
 
@@ -76,7 +76,7 @@ Net.prototype.get = function(req) {
         var fileName = this.options.cacheDir + encodeURIComponent(req.url);
         var headers = {};
         if (!req.nocache) {
-            var contents = safe.fs.readFileSync(fileName, 'utf8');
+            var contents = safe.fs.readFileSync(fileName, "utf8");
             if (contents) {
                 var data = safe.JSON.parse(contents);
                 if (!data) { // cache gone bad, repair
@@ -99,9 +99,12 @@ Net.prototype.get = function(req) {
             this.requests[req.url].promises.push(resolve);
             verbose("Tacked on to request");
         } else {
-            if (req.spoof) {
-                headers['Origin'] = 'http://www.nba.com';
-                headers['User-Agent'] = 'Cool story browser';
+            if (req.spoof === "nba") {
+                headers["Origin"] = "http://www.nba.com";
+                headers["User-Agent"] = "Cool story browser";
+            } else if (req.spoof === "basketball-reference") {
+                headers["Origin"] = "https://www.basketball-reference.com";
+                headers["User-Agent"] = "curl/7.81.0";
             }
             console.log("getting shit", req.url);
             this.requests[req.url] = new Request(req, headers, fileName, resolve, this);

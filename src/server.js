@@ -1,34 +1,34 @@
 #!/usr/bin/env node
 
 /*global require, __dirname, setTimeout */
-const argv = require('yargs').usage("Usage: %0 --game [arg] --max-time [time] --log-file [file] --verbose|-v --clear-cache|-C").argv;
+const argv = require("yargs").usage("Usage: %0 --game [arg] --max-time [time] --log-file [file] --verbose|-v --clear-cache|-C").argv;
 
-const NBA = require('./NBA.js');
-const process = require('process');
-const safe = require('safetydance');
-const express = require('express');
-const fs = require('fs');
-const crypto = require('crypto');
-const clone = require('clone');
-const Net = require('./Net.js');
-const bsearch = require('binary-search');
-const GameParser = require('./GameParser.js');
-const bodyParser = require('body-parser');
-const serveIndex = require('serve-index');
-const Log = require('./Log.js');
+const NBA = require("./NBA.js");
+const process = require("process");
+const safe = require("safetydance");
+const express = require("express");
+const fs = require("fs");
+const crypto = require("crypto");
+const clone = require("clone");
+const Net = require("./Net.js");
+const bsearch = require("binary-search");
+const GameParser = require("./GameParser.js");
+const bodyParser = require("body-parser");
+const serveIndex = require("serve-index");
+const Log = require("./Log.js");
 const log = Log.log;
 const verbose = Log.verbose;
 const fatal = Log.fatal;
 
-var opts = {
-    domains: ['nbadvr.com'],
-    email: 'agbakken@gmail.com',
+let opts = {
+    domains: ["nbadvr.com"],
+    email: "agbakken@gmail.com",
     agreeTos: true
 };
 
 function addIp(ip)
 {
-    var current = safe.JSON.parse(safe.fs.readFileSync("stats.json"));
+    let current = safe.JSON.parse(safe.fs.readFileSync("stats.json"));
     if (!current) {
         current = {};
     }
@@ -46,7 +46,7 @@ Log.init(argv);
 const httpPort = argv["http-port"] || 8899;
 
 const lowerBound = function(haystack, needle, comparator) {
-    var idx = bsearch(haystack, needle, comparator);
+    let idx = bsearch(haystack, needle, comparator);
     if (idx < 0) {
         idx = -idx;
         while (idx > 0 && comparator(haystack[idx - 1], needle) > 0)
@@ -57,26 +57,27 @@ const lowerBound = function(haystack, needle, comparator) {
     }
     return idx;
 };
-var schedule;
-var gamesById = {};
+let schedule;
+let standings;
+let gamesById = {};
 
-var league = new NBA.League;
+let league = new NBA.League;
 
-var app = express();
+let app = express();
 app.use((req, res, next) => {
     addIp(req.connection.remoteAddress);
-    if (req.url.indexOf('.mp3') != -1) {
+    if (req.url.indexOf(".mp3") != -1) {
         fs.appendFileSync("mp3.list", `${req.url} - ${(new Date()).toString()} - ${req.connection.remoteAddress}\n`);
     }
     next();
 });
 app.use(bodyParser.json());
-var net = new Net({cacheDir: (argv.cacheDir || __dirname + "/cache/"), clear: (argv.C || argv["clear-cache"]) });
+let net = new Net({cacheDir: (argv.cacheDir || __dirname + "/cache/"), clear: (argv.C || argv["clear-cache"]) });
 
-var host = `localhost:${httpPort}`;
+let host = `localhost:${httpPort}`;
 function formatGame(game)
 {
-    var match = /^(.*)\/([A-Z][A-Z][A-Z])([A-Z][A-Z][A-Z])$/.exec(game.gameUrlCode);
+    let match = /^(.*)\/([A-Z][A-Z][A-Z])([A-Z][A-Z][A-Z])$/.exec(game.gameUrlCode);
     return {
         home: match[3],
         away: match[2],
@@ -89,17 +90,17 @@ function formatGame(game)
 // curl -v http://localhost:8899/api/games/list/20170129
 function gamesByDate(req, res, next) {
     // console.log(req.params);
-    var date = new Date(parseInt(req.params.date.substr(0, 4)),
+    let date = new Date(parseInt(req.params.date.substr(0, 4)),
                         parseInt(req.params.date.substr(4, 2)) - 1,
                         parseInt(req.params.date.substr(6)));
     // console.log(date, req.params.date);
 
-    var obj = { gameTime: date };
+    let obj = { gameTime: date };
     if (!(obj.gameTime instanceof Date)) {
         next(new Error("Bad date"));
         return;
     }
-    var idx = lowerBound(schedule, obj, function(l, r) {
+    let idx = lowerBound(schedule, obj, function(l, r) {
         return l.gameTime.valueOf() - r.gameTime.valueOf();
     });
     req.games = [];
@@ -109,7 +110,7 @@ function gamesByDate(req, res, next) {
     next();
 }
 
-app.get('/api/games/:date', gamesByDate, (req, res, next) => {
+app.get("/api/games/:date", gamesByDate, (req, res, next) => {
     if (req.games) {
         res.send(JSON.stringify(req.games) + "\n");
     } else {
@@ -117,31 +118,31 @@ app.get('/api/games/:date', gamesByDate, (req, res, next) => {
     }
 });
 
-app.post('/deploy', (req, res) => {
-    var hmac;
-    var calculatedSignature;
-    var payload = req.body;
+app.post("/deploy", (req, res) => {
+    let hmac;
+    let calculatedSignature;
+    let payload = req.body;
 
     verbose("got deploy hook", req.body, req.headers);
-    hmac = crypto.createHmac('sha1', process.env.NBA_SECRET);
+    hmac = crypto.createHmac("sha1", process.env.NBA_SECRET);
     hmac.update(JSON.stringify(payload));
-    calculatedSignature = 'sha1=' + hmac.digest('hex');
+    calculatedSignature = "sha1=" + hmac.digest("hex");
 
-    if (req.headers['x-hub-signature'] === calculatedSignature) {
+    if (req.headers["x-hub-signature"] === calculatedSignature) {
         log("Good signature", argv.deploy, req.body.ref);
         res.sendStatus(200);
-        if (argv.deploy && req.body && req.body.ref == 'refs/heads/deploy') {
-            fs.writeFileSync('.deploy.pull', undefined);
+        if (argv.deploy && req.body && req.body.ref == "refs/heads/deploy") {
+            fs.writeFileSync(".deploy.pull", undefined);
             setTimeout(() => { process.exit(0); }, 1000);
         }
     } else {
-        log('Bad signature');
+        log("Bad signature");
         res.sendStatus(403);
     }
 });
 
 function findGame(req, res, next) {
-    var err;
+    let err;
     gamesByDate(req, res, function(error) { err = error; });
     if (err) {
         next(err);
@@ -153,16 +154,16 @@ function findGame(req, res, next) {
         return;
     }
 
-    var gameSpec;
-    var gameId;
-    if (req.params.game.length == 7 && req.params.game[3] == '@') {
+    let gameSpec;
+    let gameId;
+    if (req.params.game.length == 7 && req.params.game[3] == "@") {
         gameSpec = req.params.game;
     } else {
         gameId = req.params.game; // this needs to stay a string, there are leading zeroes
     }
 
-    var game;
-    for (var i=0; i<req.games.length; ++i) {
+    let game;
+    for (let i=0; i<req.games.length; ++i) {
         console.log("game id", gameId, i, req.games.length, req.games[i].gameId);
         if (gameId) {
             if (req.games[i].gameId == gameId) {
@@ -179,22 +180,22 @@ function findGame(req, res, next) {
         return;
     }
 
-    var quarters = [];
+    let quarters = [];
     function getNextQuarter() {
-        return net.get({ url: `http://data.nba.net/data/10s/prod/v1/${req.params.date}/${game.gameId}_pbp_${quarters.length + 1}.json`, spoof: true }).then(function(data) {
-            var gameFinished = false;
+        return net.get({ url: `http://data.nba.net/data/10s/prod/v1/${req.params.date}/${game.gameId}_pbp_${quarters.length + 1}.json`, spoof: "nba" }).then(function(data) {
+            let gameFinished = false;
             if (data.statusCode != 200) {
                 done = true;
             } else {
-                var quarterData = JSON.parse(data.body);
+                let quarterData = JSON.parse(data.body);
                 if (!(quarterData.plays instanceof Array)) {
                     throw new Error("Invalid quarter data: " + data.url);
                 }
                 quarters.push(quarterData);
 
-                var lastPlay = quarterData.plays[quarterData.plays.length - 1];
-                var done = false;
-                if (!lastPlay || lastPlay.description != 'End Period') {
+                let lastPlay = quarterData.plays[quarterData.plays.length - 1];
+                let done = false;
+                if (!lastPlay || lastPlay.description != "End Period") {
                     net.clearCache(data.url);
                     done = true;
                 } else if (quarters.length >= 4 && lastPlay.hTeamScore != lastPlay.vTeamScore) {
@@ -220,10 +221,10 @@ function findGame(req, res, next) {
     });
 }
 
-app.get('/api/games/:date/:game', findGame, (req, res, next) => {
+app.get("/api/games/:date/:game", findGame, (req, res, next) => {
     verbose("Requested", req.url);
     if (req.game) {
-        var encoded = req.game.encode(league);
+        let encoded = req.game.encode(league);
         res.send(JSON.stringify(encoded) + "\n");
     } else {
         res.sendStatus(404);
@@ -232,12 +233,12 @@ app.get('/api/games/:date/:game', findGame, (req, res, next) => {
 
 function query(req, res, next)
 {
-    var id = parseInt(req.params.spec);
-    var ret = [];
+    let id = parseInt(req.params.spec);
+    let ret = [];
     // console.log(gameId, req.params.spec);
     if (!id) {
         schedule.forEach((game) => {
-            var match = /([A-Z][A-Z][A-Z])([A-Z][A-Z][A-Z])$/.exec(game.gameUrlCode);
+            let match = /([A-Z][A-Z][A-Z])([A-Z][A-Z][A-Z])$/.exec(game.gameUrlCode);
             // console.log(`${match[1]}@${match[2]}`, req.params.spec);
             if (`${match[1]}@${match[2]}` == req.params.spec)
                 ret.push(formatGame(game));
@@ -248,19 +249,19 @@ function query(req, res, next)
                 ret.push(formatGame(game));
             }
         });
-        var p = league.players[id];
+        let p = league.players[id];
         if (p)
             ret.push(p.encode());
     }
 
-    var t = league.find(req.params.spec);
+    let t = league.find(req.params.spec);
     if (t)
         ret.push(league.encodeTeam(t));
     req.matches = ret;
     next();
 }
 
-app.get('/api/query/:spec', query, (req, res, next) => {
+app.get("/api/query/:spec", query, (req, res, next) => {
     // verbose("Requested", req.url);
     if (req.matches.length == 1) {
         res.send(JSON.stringify(req.matches[0]) + "\n");
@@ -279,17 +280,21 @@ app.get("/predictions", (req, res) => {
     res.redirect("/predictions/index.html");
 });
 
+app.get("/standings", (req, res) => {
+    res.send(JSON.stringify(standings) + "\n");
+});
+
 app.get("/garden/", (req, res) => {
     res.redirect("/garden/index.html");
 });
 
 app.get("/gardenlist", (req, res) => {
-    var files = fs.readdirSync("www/garden")
+    let files = fs.readdirSync("www/garden")
         .filter((file) => {
-            return file.length > 4 && file.lastIndexOf('.jpg') == file.length - 4;
+            return file.length > 4 && file.lastIndexOf(".jpg") == file.length - 4;
         })
         .map((file) => {
-            var name = file.substring(0, file.length - 4);
+            let name = file.substring(0, file.length - 4);
             return { name: name, date: new Date(name).valueOf(), href: "/garden/" + name + ".jpg" };
         })
         .sort((a, b) => {
@@ -300,15 +305,137 @@ app.get("/gardenlist", (req, res) => {
 });
 
 // console.log(
-// app.use(express.static('www'));
+// app.use(express.static("www"));
 // console.log(`${__dirname}/www`);
-app.use('/', express.static("www"), serveIndex("www", {'icons': true}));
+app.use("/", express.static("www"), serveIndex("www", {"icons": true}));
+
+function convertBasketballReferenceResult(string)
+{
+    string = string.replace(/<[^>]*>/g, " ");
+
+    function apply(teams, idx)
+    {
+        return teams.map(team => {
+            let i = string.indexOf(team.name, idx);
+            if (i === -1) {
+                throw new Error("Can't find team " + team.name);
+            }
+            i = string.indexOf(")&nbsp;", i);
+            if (i === -1) {
+                throw new Error("Can't find nbsp");
+            }
+            i += 7;
+            let end = string.indexOf(".", i);
+            if (end === -1) {
+                throw new Error("Can't find .");
+            }
+            end -= 2;
+            const split = string.substring(i, end).split(/ +/).filter(x => x);
+            const win = parseInt(split[0]);
+            const loss = parseInt(split[1]);
+            let winPct = (win / (win + loss)).toFixed(3);
+            if (winPct[0] === "0") {
+                winPct = winPct.substring(1);
+            }
+            // console.log(split);
+            // process.exit();
+            const names = team.name.split(" ");
+            const teamNickname = names.splice(names.length - 1, 1)[0];
+            return {
+                teamSitesOnly: {
+                    teamTricode: team.short,
+                    teamName: names.join(" "),
+                    teamNickname
+                },
+                win,
+                loss,
+                winPct
+            };
+        }).sort((a, b) => {
+            let ret = b.winPct - a.winPct;
+            if (!ret) {
+                ret = b.win - a.win;
+            }
+            return ret;
+        });
+    }
+
+    const east = apply([
+        { name: "Atlanta Hawks", short: "ATL" },
+        { name: "Boston Celtics", short: "BOS" },
+        { name: "Brooklyn Nets", short: "BKN" },
+        { name: "Charlotte Hornets", short: "CHA" },
+        { name: "Chicago Bulls", short: "CHI" },
+        { name: "Cleveland Cavaliers", short: "CLE" },
+        { name: "Detroit Pistons", short: "DET" },
+        { name: "Indiana Pacers", short: "IND" },
+        { name: "Miami Heat", short: "MIA" },
+        { name: "Milwaukee Bucks", short: "MIL" },
+        { name: "New York Knicks", short: "NYK" },
+        { name: "Orlando Magic", short: "ORL" },
+        { name: "Philadelphia 76ers", short: "PHI" },
+        { name: "Toronto Raptors", short: "TOR" },
+        { name: "Washington Wizards", short: "WAS" },
+    ], string.indexOf("Eastern Conference"));
+
+    // console.log(JSON.stringify(east, null, 4));
+    const west = apply([
+        { name: "Dallas Mavericks", short: "DAL" },
+        { name: "Denver Nuggets", short: "DEN" },
+        { name: "Golden State Warriors", short: "GSW" },
+        { name: "Houston Rockets", short: "HOU" },
+        { name: "Los Angeles Clippers", short: "LAC" },
+        { name: "Los Angeles Lakers", short: "LAL" },
+        { name: "Memphis Grizzlies", short: "MEM" },
+        { name: "Minnesota Timberwolves", short: "MIN" },
+        { name: "New Orleans Pelicans", short: "NOP" },
+        { name: "Oklahoma City Thunder", short: "OKL" },
+        { name: "Phoenix Suns", short: "PHO" },
+        { name: "Portland Trail Blazers", short: "POR" },
+        { name: "Sacramento Kings", short: "SAC" },
+        { name: "San Antonio Spurs", short: "SAS" },
+        { name: "Utah Jazz", short: "UTA" },
+    ], string.indexOf("Western Conference"));
+    return { east, west };
+}
+
+function refreshStandings()
+{
+    function work(resolve) {
+        return net.get({ url: `https://www.basketball-reference.com/leagues/NBA_${NBA.currentSeasonYear()}_standings.html`, nocache: true, spoof: "basketball-reference" }).then((response) => {
+            // console.log(response.body);
+            const parsed = convertBasketballReferenceResult(response.body);
+
+            if (!parsed) {
+                throw new Error("Couldn't parse standings " + response.url);
+                net.clearCache(response.url);
+                return undefined;
+            }
+            // safe.fs.writeFileSync("/tmp/schedule.json", JSON.stringify(parsed, undefined, 4));
+            // console.log(parsed);
+            standings = parsed;
+
+            // schedule = parsed.league.standard;
+            // for (let idx=0; idx<schedule.length; ++idx) {
+            //     schedule[idx].gameTime = new Date(schedule[idx].startTimeUTC);
+            //     gamesById[schedule[idx].gameId] = schedule[idx];
+            // }
+            if (resolve) {
+                resolve();
+            }
+            setTimeout(work, 60 * 60000); // refresh every hour
+        });
+    }
+    return new Promise((resolve) => { work(resolve); });
+    // return net.get({ url: `http://data.nba.net/data/10s/prod/v1/${NBA.currentSeasonYear() - 1}/schedule.json`, nocache: true, spoof: "nba" }).then((response) => {
+    //         let parsed = safe.JSON.parse(response.body);
+}
 
 function refreshSchedule()
 {
     function work(resolve) {
-        return net.get({ url: `http://data.nba.net/data/10s/prod/v1/${NBA.currentSeasonYear() - 1}/schedule.json`, nocache: true, spoof: true }).then((response) => {
-            var parsed = safe.JSON.parse(response.body);
+        return net.get({ url: `http://data.nba.net/data/10s/prod/v1/${NBA.currentSeasonYear() - 1}/schedule.json`, nocache: true, spoof: "nba" }).then((response) => {
+            let parsed = safe.JSON.parse(response.body);
 
             if (!parsed) {
                 throw new Error("Couldn't parse schedule " + response.url);
@@ -318,7 +445,7 @@ function refreshSchedule()
             safe.fs.writeFileSync("/tmp/schedule.json", JSON.stringify(parsed, undefined, 4));
 
             schedule = parsed.league.standard;
-            for (var idx=0; idx<schedule.length; ++idx) {
+            for (let idx=0; idx<schedule.length; ++idx) {
                 schedule[idx].gameTime = new Date(schedule[idx].startTimeUTC);
                 gamesById[schedule[idx].gameId] = schedule[idx];
             }
@@ -335,28 +462,28 @@ function refreshSchedule()
 function refreshPlayerCache()
 {
     function work(resolve) {
-        net.get({ url: `http://data.nba.net/data/10s/prod/v1/${NBA.currentSeasonYear() - 1}/players.json`, nocache: true, spoof: true })
+        net.get({ url: `http://data.nba.net/data/10s/prod/v1/${NBA.currentSeasonYear() - 1}/players.json`, nocache: true, spoof: "nba" })
             .then((result) => {
                 if (result.statusCode == 200) {
-                    var start = resolve && !league.players;
+                    let start = resolve && !league.players;
                     league.players = {};
                     if (!start) {
                         league.forEachTeam((team) => {
                             team.players = {};
                         });
                     }
-                    var data = JSON.parse(result.body);
+                    let data = JSON.parse(result.body);
                     data.league.standard.forEach((player) => {
-                        var names = [];
+                        let names = [];
                         if (player.firstName)
                             names.push(player.firstName);
                         if (player.lastName)
                             names.push(player.lastName);
 
-                        var p = new NBA.Player(names, player.personId);
+                        let p = new NBA.Player(names, player.personId);
                         league.players[p.id] = p;
                         if (player.teamId) {
-                            var team = league.find(player.teamId);
+                            let team = league.find(player.teamId);
                             if (team)
                                 team.players[p.id] = p;
                         }
@@ -381,8 +508,9 @@ function refreshPlayerCache()
     return new Promise(function(resolve) { work(resolve); });
 }
 
-var all = [
+let all = [
     refreshSchedule(),
+    refreshStandings(),
     refreshPlayerCache()
 ];
 
@@ -396,8 +524,8 @@ Promise.all(all).then(function(responses) {
         return net.get({url: `http://localhost:${httpPort}/api/games/20170204/0021600758`, nocache: true }).then((response) => {
             safe.fs.writeFileSync("/tmp/game.json", response.body);
             safe.fs.writeFileSync("/tmp/game.pretty.json", JSON.stringify(JSON.parse(response.body), null, 4));
-            var game = NBA.Game.decode(JSON.parse(response.body), league);
-            var box = new NBA.BoxScore(game, league);
+            let game = NBA.Game.decode(JSON.parse(response.body), league);
+            let box = new NBA.BoxScore(game, league);
             box.print();
             process.exit();
         });
