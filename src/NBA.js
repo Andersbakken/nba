@@ -296,7 +296,7 @@ function League()
             new Division("Northwest", [
                 new Team("Denver Nuggets", "DEN", 1610612743),
                 new Team("Minnesota Timberwolves", "MIN", 1610612750),
-                new Team("Oklahoma City Thunder", "OKC", 1610612760),
+                new Team("Oklahoma City Thunder", "OKL", 1610612760),
                 new Team("Portland Trail Blazers", "POR", 1610612757),
                 new Team("Utah Jazz", "UTA", 1610612762)
             ]),
