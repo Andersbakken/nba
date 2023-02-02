@@ -1,28 +1,28 @@
 const teams = {
-    West: ["DAL", "DEN", "GSW", "HOU", "LAC", "LAL", "MEM", "MIN", "NOP", "OKL", "PHX", "POR", "SAC", "SAS", "UTA"],
+    West: ["DAL", "DEN", "GSW", "HOU", "LAC", "LAL", "MEM", "MIN", "NOP", "OKL", "PHO", "POR", "SAC", "SAS", "UTA"],
     East: ["ATL", "BKN", "BOS", "CHA", "CHI", "CLE", "DET", "IND", "MIA", "MIL", "NYK", "ORL", "PHI", "TOR", "WAS"]
 };
 
 const contestants = {
     Anders: {
         East: ["MIL", "PHI", "BOS", "BKN", "MIA", "TOR", "CLE", "ATL", "NYK", "CHI", "CHA", "DET", "WAS", "ORL", "IND"],
-        West: ["GSW", "LAC", "DEN", "MIN", "MEM", "PHX", "NOP", "DAL", "SAC", "LAL", "POR", "HOU", "OKL", "UTA", "SAS"]
+        West: ["GSW", "LAC", "DEN", "MIN", "MEM", "PHO", "NOP", "DAL", "SAC", "LAL", "POR", "HOU", "OKL", "UTA", "SAS"]
     },
     Magnus: {
         East: ["BOS", "MIL", "PHI", "BKN", "CLE", "MIA", "CHI", "ATL", "TOR", "CHA", "NYK", "WAS", "DET", "ORL", "IND"],
-        West: ["GSW", "LAC", "PHX", "MIN", "MEM", "DEN", "DAL", "NOP", "LAL", "POR", "SAC", "OKL", "HOU", "SAS", "UTA"]
+        West: ["GSW", "LAC", "PHO", "MIN", "MEM", "DEN", "DAL", "NOP", "LAL", "POR", "SAC", "OKL", "HOU", "SAS", "UTA"]
     },
     Kim: {
         East: ["MIL", "PHI", "MIA", "BOS", "BKN", "CLE", "ATL", "TOR", "CHI", "NYK", "WAS", "DET", "IND", "ORL", "CHA"],
-        West: ["MIN", "GSW", "LAC", "PHX", "MEM", "DEN", "NOP", "DAL", "LAL", "POR", "SAC", "HOU", "OKL", "SAS", "UTA"]
+        West: ["MIN", "GSW", "LAC", "PHO", "MEM", "DEN", "NOP", "DAL", "LAL", "POR", "SAC", "HOU", "OKL", "SAS", "UTA"]
     },
     Henrik: {
         East: ["PHI", "MIL", "BOS", "BKN", "CLE", "MIA", "ATL", "TOR", "CHI", "NYK", "DET", "WAS", "CHA", "ORL", "IND"],
-        West: ["GSW", "MIN", "LAC", "MEM", "PHX", "DEN", "DAL", "NOP", "LAL", "SAC", "POR", "OKL", "HOU", "UTA", "SAS"]
+        West: ["GSW", "MIN", "LAC", "MEM", "PHO", "DEN", "DAL", "NOP", "LAL", "SAC", "POR", "OKL", "HOU", "UTA", "SAS"]
     },
     Jameel: {
         East: ["PHI", "BKN", "MIL", "BOS", "CLE", "MIA", "ATL", "CHI", "TOR", "WAS", "NYK", "CHA", "DET", "ORL", "IND"],
-        West: ["LAC", "DEN", "GSW", "MIN", "NOP", "LAL", "PHX", "MEM", "DAL", "SAC", "POR", "OKL", "HOU", "UTA", "SAS"]
+        West: ["LAC", "DEN", "GSW", "MIN", "NOP", "LAL", "PHO", "MEM", "DAL", "SAC", "POR", "OKL", "HOU", "UTA", "SAS"]
     }
 };
 
