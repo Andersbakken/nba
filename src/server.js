@@ -509,9 +509,9 @@ function refreshPlayerCache()
 }
 
 let all = [
-    refreshSchedule(),
+    // refreshSchedule(),
     refreshStandings(),
-    refreshPlayerCache()
+    // refreshPlayerCache()
 ];
 
 Promise.all(all).then(function(responses) {
